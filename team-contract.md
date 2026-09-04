@@ -1,7 +1,7 @@
 # Team Contract: <team name>
 
 **Project:** USPTO Patent Inteligence
-**Members:** Tanner Temple, ...
+**Members:** Tanner Temple, Bradley Helmholz, ...
 **Repository:** https://github.com/PathNotFound404/cosc-40943-team-06-USPTO, owned by Cody Pinkston
 **Signed:** 4 September 2026
 
@@ -58,3 +58,4 @@ Still unresolved: we escalate to our TA, then to the instructor. We escalate ear
 Each member adds their own line, in their own commit.
 
 - Tanner Temple, 9/4/26
+- Bradley Helmholz, 9/4/26
