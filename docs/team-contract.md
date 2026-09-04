@@ -61,3 +61,4 @@ Each member adds their own line, in their own commit.
 - Bradley Helmholz, 9/4/26
 - Turner DeMott, 9/4/26
 - Edwin Rodriguez, 9/4/26
+- Cody Pinkston, 9/4/2026
