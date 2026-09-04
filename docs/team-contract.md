@@ -60,3 +60,4 @@ Each member adds their own line, in their own commit.
 - Tanner Temple, 9/4/26
 - Bradley Helmholz, 9/4/26
 - Turner DeMott, 9/4/26
+- Edwin Rodriguez, 9/4/26
