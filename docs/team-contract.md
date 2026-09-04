@@ -1,7 +1,7 @@
 # Team Contract: <team name>
 
 **Project:** USPTO Patent Inteligence
-**Members:** Tanner Temple, Bradley Helmholz, ...
+**Members:** Tanner Temple, Bradley Helmholz, Turner DeMott, ...
 **Repository:** https://github.com/PathNotFound404/cosc-40943-team-06-USPTO, owned by Cody Pinkston
 **Signed:** 4 September 2026
 
