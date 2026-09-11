@@ -1,8 +1,8 @@
 # Vision and Scope
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
+**Project:** USPTO Patent Intelligence
+**Team:** 6
+**Client:** USPTO
 **Version:** 0.1
 
 ---
@@ -33,13 +33,15 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial draft from the client brief and first client meeting | _[Name]_ |
+| 2026-09-11 | 0.1 | Initial draft from the client brief and first client meeting | Turner DeMott |
 
 ---
 
 ## 1. Introduction
 
 _[This document defines the goals, purpose, and boundaries of the project. It gives every stakeholder a shared understanding of what the software is for and the context it operates in: the business problem being solved, how the software fits into the client's world, and where the line falls between what is in scope and what is not.]_
+
+The goals are 
 
 ### 1.1 Background
 
