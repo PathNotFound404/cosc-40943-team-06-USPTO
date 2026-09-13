@@ -33,7 +33,8 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| 2026-09-11 | 0.1 | Initial draft from the client brief and first client meeting | Turner DeMott |
+| 2026-09-13 | 0.1 | Initial draft from the client brief | Turner DeMott |
+
 
 ---
 
@@ -41,11 +42,15 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 
 _[This document defines the goals, purpose, and boundaries of the project. It gives every stakeholder a shared understanding of what the software is for and the context it operates in: the business problem being solved, how the software fits into the client's world, and where the line falls between what is in scope and what is not.]_
 
-The goals are 
+This document states why USPTO Patent Intelligence is being built, who it is for, what it must do, and what is expected to be actually be shipped when the project is complete. This will allow the team, the client, and any AI agent working from this file to share one understanding of the product before design work starts.
 
 ### 1.1 Background
 
 _[Summarize the rationale and context for the new product, or for the changes to an existing one. Describe the situation that led to the decision to build it.]_
+
+The USPTO publishes a large volume of Office Action data. This data leads to questions about which Art Units and examiners are busiest, how rejection patterns are shifting, and where an examiner's behavior looks statistically unusual. However, the raw releases are not organized for analysis.
+
+The data is sensitive enough that sending it to a cloud AI service is not ideal. No existing tool combines Office Action-specific analytics with local AI-assisted analysis in a package a non-technical analyst can just install and run. That gap is what this project exists to fill.
 
 _**Step 1: Describe the business.** Introduce the organization. Cover what it does (industry, products, services), its size (employees, locations), and the goals that relate to the problem you are solving._
 
