@@ -33,12 +33,12 @@ This is about order, not silence. Some clients want to think out loud with you, 
 
 | | |
 |---|---|
-| **Date** | 2026-09-13 |
-| **Time and location** | _[Where, and in person or remote]_ |
-| **Client participants** | _[Name, role. Everyone, including whoever only listened.]_ |
-| **Team participants** | _[Name (lead), Name (scribe), Name (observer), ...]_ |
-| **Recording** | _[Asked? Granted or declined]_ |
-| **Photos of screens or forms** | _[Asked? Granted or declined]_ |
+| **Date** | 2026-09-17 |
+| **Time and location** | Remote on **Teams** |
+| **Client participants** | **Malachi Hernandez**|
+| **Team participants** | **Cody Pinkston:** Lead<br> **Bradley Helmholz:** Co-Lead<br> **Tanner Temple:** Scribe<br> **Turner Demott:** Owns Clock <br> **Edwin Rodriguez:** Observer <br> **Koen Dolezar:** Observer |
+| **Recording** | Not Asked |
+| **Photos of screens or forms** | Will receive soon |
 
 _Ask to record, and say why: so nobody is transcribing instead of listening. If they decline, the scribe matters more. Ask separately about photographing screens, forms, and reports. A photo of the spreadsheet they actually use beats a page of notes about it._
 
@@ -66,9 +66,13 @@ Most first meetings run 60 to 90 minutes. Budget for the short one.
 
 _**Must ask. 5 min.** Not small talk. Whose problem is this, how much of the domain lives only in this person's head, and how much of their own time do they have for you? A client fitting this around a full job answers email slowly, and you want to know that in week 3 rather than week 9._
 
-_Adapt: Tell me about being an HR manager. How did you choose that line of work? What do you most and least like about it? How does this project fit alongside the rest of your work?_
+_Tell me about your role and how it involves USPTO data or patent examination activity. How did you end up working with this kind of data? <br><br>What do you use it for today, and how much of your week does that take?_
 
-**What they said:**
+**What they said:** Own business that relates to patents, IP/AI company he owns with a friend, 3 years old, company up for sale currently, products have matured
+He also works in AI with small business, travels with US Department of state, is in a speakers program 6G, IP, his passion is IP
+Goal for us to understand IP and provide data for others in a personalized setting (think Linkedin post). Sponsors TCU projects and Texas AM projects last 3 years, provides interesting senior projects.<br> This project is a space he wants to move into, has run dry runs to see what it takes to process the data, would take about 2-4 hours weekly to visualze the data and then another few hours to write the post, comes from several data sets (one is office action), other is weekly zips like application status, we can continue to talk about it as we go (comes from the UPSTO data site)
+Takes 4-6 hours total a week to create this content on the data side, another 2-4 hours, so it takes 8 hours PER post
+The **ONLY** person using this application is him, Malachi so that he can easily see them and copy them into his posts and website
 
 ---
 
@@ -78,11 +82,16 @@ _Adapt: Tell me about being an HR manager. How did you choose that line of work?
 
 _**Must ask. 5 min.** You are here for vocabulary as much as facts. Every term you do not recognize goes in the glossary before you leave. When your client says "cycle" in one sentence and "sprint" in the next, ask which they mean while they are still in front of you; an agent reading the transcript afterward cannot ask._
 
-_Adapt: Give us some background on recruiting here. Why does it matter to the company? Who else is involved? Any documents, slides, or videos that would get us up to speed on the terminology? When you say [term], what does that cover?_
+_Adapt: Give us some background on what you or your organization do with USPTO Office Action data, and why it matters to you?<br>_
 
-**What they said:**
+**What they said:** These patent examiners read, look through database of patents and judge how the patent application is written based on the set of criteria to make sure it has the correct info in it. The USPTO publicizes these office actions with weekly zips, as well as API data which we can download when they publish the office actions. He prefers the bulk data bc the goal isn't to show individual patents, but a weekly overview of how the uspto is functioning, how well is this government agency functioning.<br>
+These zip files usually are only a few gigabytes, weekly rollout (20-50 gb max in this zip file) → processing up to 100 gb a week in different chunks to get the data we need
 
-**Terms for the glossary, in their words:** _[Term: what they said it means. Flag any term two people used differently.]_
+
+**Terms for the glossary, in their words:** `Office Action Data:` when you file a patent to protect your invention.<br> 
+`Art Unit:` group of people who go and review your patent, includes the patent examiner, subject matter expertise, looks at any prior knowledge before they file you a grant.<br> 
+`A Grant:` seal of approval by USPTO that says they havent found any errors, we think your application provides enough evidence to protect your invention, then you get approved.
+`Rejection Codes:` The office action comes in with rejections (102 or 103) that says there is an invention out there that is too similar to yours, or when your invention is too broad and doesnt have proper data (112 office action - double something rejection, two concepts that should be broken into different patents, need to be separated)
 
 ## 3. Business drivers and objectives
 
@@ -90,9 +99,11 @@ _**Must ask. 5 min.** Why this, why now. These become your business objectives, 
 
 _Expect to miss it here. Baselines surface in section 4, when they are looking at the thing that takes the time. Ask the objective now, listen for the number all hour, and close the gap in the read-back._
 
-_Adapt: Why did you propose this project? What is the main problem, or the opportunity? Who is affected, and who benefits? What happens if we do nothing? How will you know it worked, and what is that number today?_
+_Why did you propose this project — what problem or opportunity in USPTO data are you trying to address?<br> What is the most vital tool you are looking to get built if all the functionalities and features cannot be built in this timeframe?_
 
-**What they said:**
+**What they said:** Several. Different data analytics, visualizations, EOD needs: 
+Product non-negotiable needs to be built **doesnt hallucinate, doesnt break when it sees diff data. The data it pulls from, doesn't guess, makes concrete claims directly on the data.** Needs a paper trail to show where it pulls its conclusions from, needs a verification step. Most of this will be messy data processing and going to create clean images doesn't wanna use excel. Just open the laptop and see the visualizations. 
+
 
 **Candidate objectives (`BO-<slug>`), with baselines where you got them:** _[Or "baseline unknown, `OI-*` raised".]_
 
@@ -106,37 +117,47 @@ _**Must ask. 10 min, the best ten in the meeting.** Ask them to show you rather 
 
 _Walk one real recent case end to end. "Take me through the last one you did" beats "how does it usually work", because the general shape is a summary they have given before and the last real one has the exceptions in it._
 
-_Adapt: What are the steps in hiring a technical candidate? Could you show me your interview guide, and the notes from the last few? Who does what at each step? Where does it get stuck? What do you do when it goes wrong?_
+_Walk me through the last time you actually analyzed a batch of Office Action data, start to finish. What format did it come in, where did you get it, and what did you do with it step by step?_
 
-**What they said:** _[Numbered steps, in their order, not yours.]_
+**What they said:** MAY THIS WEEKEND SHOW UP HOW IT WORKS THIS WEEKEND AND HIS THOUGHT PROCESS
+Then write questions based on this
 
-**Artifacts they showed us:** _[Spreadsheets, forms, reports, current tools, screenshots taken. Ask for copies of everything.]_
+
+**Artifacts they showed us:** Nothing as of yet, client states they will send video and data this weekend.
 
 ## 5. What is hard about it
 
 _**Must ask. 5 min.** The complaint is usually the requirement. Listen for "must", "unless", "only", and "except", which arrive unannounced in the middle of a story about something else. Those sentences are business rules, and they exist whether or not your software does._
 
-_Adapt: What is the most frustrating part? Walk me through the last time it went badly. What takes longest? What do you have to redo? What do people get wrong? What do you check by hand because you do not trust the system?_
+_What's the most frustrating part of working with this data today?_
 
-**What they said:**
+**What they said:** Hates the data gov puts out, not cleaned in any sense, is just a dump of data they give. Sometimes the dump is siloed, have Office action zip, litigation zip, etc. means they have different application numbers across these areas but not easy to see the different paths between the data sets.<br>
+Wants a system that understand this a bit easier, understands grant numbers, litigation numbers etc. Gives associations based on the data sets
 
-**Rules heard (candidate `BR-*` for week 4):** _[Write each as their policy, not as software behavior.]_
+
+**Rules heard (candidate `BR-*` for week 4):** _[Write each as their policy, not as software behavior.]_ Associate files based on litigation number or grant number 
 
 ## 6. What already works
 
 _**Must ask. 3 min.** Ask what is good before you propose replacing it. A team that removes something the client liked has lost trust it will not get back this semester, and nobody volunteers this unasked._
 
-_Adapt: What would you keep exactly as it is? What would you miss if it disappeared? Has anything been tried before that did not work, and why?_
+_What would you keep exactly as-is from your current process or tools?_
 
-**What they said:** _[Explicitly: what must not change.]_
+**What they said:** There is curently on tool for this and this is not even a process that he currently does by hand. He knows CS from system side not the execution side(Actual Code).
+Asking us to put together the best way to link this data together, want our team to design the data analysis process (no process exist currently) and then build the app
+
 
 ## 7. Volumes and scale
 
 _**Must ask. 3 min.** These numbers decide most of your architecture, and they are cheap to ask for and expensive to guess. Twenty records a semester and two hundred thousand a day are different systems._
 
-_Adapt: How many of these in a week? A year? How many at the busiest moment, and when is that? How big is the largest one? How much history has to stay available? How many people use it at once on the worst day?_
+_How many Office Actions do you typically process — per week, per month, per year?<br>How far back does historical data need to go?<br>What hardware do your intended users actually have — typical RAM, whether they have a discrete GPU — since local AI model performance depends on it?_
 
-**What they said:** _[Get a number, or record that you did not.]_
+**What they said:** Analyse the USPTO zip about once week.<br>base requirement
+Monthly to yearly overview would be nice but not necessary at this moment.<br> Monthly and yearly, also litigation area which happens after filed grant (which goes back 21 years).<br>As of now, has a `macbook air 24 gb ram, 2tb ssd, 2022, 10 core 10 core 8 core`
+Would be NICE to switch to windows, but also don’t see himself downgrading neither upgrading specifically. 
+Either online in low to no cost function, or app that he can launch for only him.
+
 
 ## 8. Who the users are
 
@@ -144,11 +165,11 @@ _**Must ask. 4 min.** The person who commissions software is often not the perso
 
 _**If you cannot reach the real users, that is a project risk, not a scheduling detail.** Record it as an `RI-<slug>` the same day. Building from a proxy's account is the most common way a capstone ships something nobody uses, and it is survivable only if you know you are doing it._
 
-_Adapt: Who uses this day to day? How many? What do they use today? Can we talk to two or three, and watch one of them work? Will they test it before handover?_
+_Who would actually open this application day to day?_
 
-**What they said:**
+**What they said:** This application is a passion project just for him to use.
 
-**Can we reach real users? If not, why, and what is the risk:**
+**Can we reach real users? If not, why, and what is the risk:** Yes we can reach the user as it is just him. 
 
 ---
 
@@ -158,33 +179,39 @@ _Adapt: Who uses this day to day? How many? What do they use today? Can we talk 
 
 _**Must ask. 4 min.** Nobody asks these in meeting 1 and everybody regrets it in November. A constraint restricts how you may build, and it is a requirement even though it describes no behavior. Ask directly; clients do not volunteer these, they assume you know._
 
-_Adapt: Is there anything we are required to use, or forbidden from using? Does IT have to approve the technology, and how long does that take? Does this touch personal data, student records, health information, or payments? Any regulations or policies it has to satisfy? Any hard dates we do not know about? Is there a budget for hosting, and who signs off?_
+_Is there anything we're required to use or forbidden from using — a specific database, a specific AI model family, an approved-software list?<br>Any hard deadlines we haven't been told about? Is there a budget for anything (model files, storage, licenses), and who signs off?_
 
-**What they said:**
+**What they said:** Not necessarily any restrictions, wants as cheap as possible. Preferably no connections to openai anthropic etc, he wants cheap automated process, not supervised, does NOT need to be quick.<br>
+Again, its part of his personal brand, bankrolling AI is going to get wild as it does so low cost.<br>
+USPTO data by december, not a hard deadline, just what he thinks based on past semesters.
+Then in spring to look at european data, chinese data maybe.
+
 
 ## 10. External dependencies
 
 _**Must ask. 3 min.** What your system has to talk to. Access credentials take weeks to obtain, so the ask has to happen now._
 
-_Adapt: What other systems does this exchange data with, in which direction, in what format? Who owns them, and who do we ask for access? How long does that usually take? Is there documentation? What does the service cost, and who pays?_
+_Beyond the USPTO's own weekly Office Action ZIP files and bulk datasets — does this need to talk to any other system: an internal database, a document management system, a reporting tool you already use?<br>If we use the USPTO API instead of file downloads, who holds the credentials, and what are the rate limits or terms of use?_
 
-**What they said:**
+**What they said:** Just the zips and bulk data sets<br>Rate limits on USPTO api’s we rarely hit them, for active pulls the limits are kind of in the dark, depends on who uses it, sometimes just randomly drops for 2 minutes, usually pulling data every minute/90 seconds.
+For bulk data sets, you dont need ongoing data pulls, its just one time.
+
 
 ## 11. Lifetime and who maintains it
 
 _**Must ask. 2 min.** The question students never ask and every client can answer. **Who runs this after we graduate, and what do they already know how to run?** It constrains your entire technology choice, so ask before you pick a stack rather than after._
 
-_Adapt: How long should this keep running? Who supports it after we graduate from TCU? What do they already maintain, in what languages? Who pays for hosting next year, and who owns the accounts?_
+_How long should this keep running? Who supports it after we graduate from TCU? What do they already maintain, in what languages? Who pays for hosting next year, and who owns the accounts?_
 
-**What they said:**
+**What they said:** It is just him and he does not currently maintain any projects.
 
 ## 12. Other stakeholders
 
 _**If there is time. 1 min.** Cheap, and occasionally it turns out somebody with a veto has not been consulted._
 
-_Adapt: Who else could influence this, or be affected by it? Whose approval do we need? Anyone who would rather this project did not happen?_
+_Who else could be affected by this — legal/compliance, IT/security (given it touches USPTO data and runs local models), other analysts who'd want access?_
 
-**What they said:**
+**What they said:** No other stake holder since the project is just for him.
 
 ---
 
@@ -194,9 +221,9 @@ _Adapt: Who else could influence this, or be affected by it? Whose approval do w
 
 _**Must ask. 1 min.** Ask it, then stop talking and wait through the silence. Highest-yield question in the guide, and it only works if you do not fill the pause._
 
-_Adapt: Is there anything I should have asked and did not? What have we not talked about that worries you?_
+_Is there anything I should have asked and did not? What have we not talked about that worries you?_
 
-**What they said:**
+**What they said:** Could not think of anything thinks we covered it all.
 
 ## 14. The read-back
 
@@ -206,18 +233,18 @@ _Read back four things: the problem in one sentence, the objectives with any num
 
 _Fill in the [vision-and-scope.md](vision-and-scope.md) vision statement table during the meeting, read its six rows aloud, and see what they fix. Ninety seconds._
 
-**What we read back, and what they corrected:** _[Corrections first. They matter more than the agreements.]_
+**What we read back, and what they corrected:** The problem is that USPTO data is messy to analyse and there currently does not exist an apps to do this. The biggest objective is to organize and analyse the messy data. The next being including AI analysis that is based on concrete evidence and does not hallucinate. The cross platform functionality of the app seems to be out of scope as this will only be running on one Mac book. There were no corrections.
 
 ## 15. Before you leave the room
 
 _**Never skip. 4 min.** Unglamorous, and where teams lose two weeks._
 
-- [ ] **Next meeting on the calendar** before anyone stands up. Not "we will be in touch". _[Date, time, place:]_
-- [ ] **Cadence agreed:** how often, roughly how long, and in person or remote. This course expects meetings **in person, on campus** where your client can travel; if they are outside DFW, agree the tool and who sends the link. _[Cadence:]_
-- [ ] **Contact channel and how fast they reply.** _[Channel, turnaround:]_
-- [ ] **Who to contact between meetings**, including when this person is away. _[Name, contact:]_
-- [ ] **Copies requested** of every artifact you were shown. _[What, and who is sending it:]_
-- [ ] **Introductions requested** to anyone named in sections 8 and 12. _[Who:]_
+- [ ] **Next meeting on the calendar** before anyone stands up. Not "we will be in touch". `Thursdays at 7pm, weekly on teams.`
+- [ ] **Cadence agreed:** how often, roughly how long, and in person or remote. This course expects meetings **in person, on campus** where your client can travel; if they are outside DFW, agree the tool and who sends the link. `Cadence: Weekly now, may shift to bi-weekly`
+- [ ] **Contact channel and how fast they reply.** `Email,states he will respond within 24 hours`
+- [ ] **Who to contact between meetings**, including when this person is away. `Malachi is the only contact`
+- [ ] **Copies requested** of every artifact you were shown. `Malachi will send a video this week and link to the data`
+- [ ] **Introductions requested** to anyone named in sections 8 and 12. Who: `No one just malachi`
 - [ ] **Say what happens next**, in one sentence, so they know what to expect and when.
 
 ---
