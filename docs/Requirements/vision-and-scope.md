@@ -1,9 +1,9 @@
 # Vision and Scope
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
-**Version:** 0.1
+**Project:** USPTO Patent Intelligence
+**Team:** 6
+**Client:** USPTO
+**Version:** 1.1
 
 ---
 
@@ -25,6 +25,14 @@ _Identifiers here are **name-based slugs**, never numbers._
 | Assumption or dependency | `AS-<slug>` | `AS-client-maintains-stack` |
 | Feature | `FEAT-<slug>` | `FEAT-performance-tracking` |
 
+| Space | Example | Example | Example |
+|---|---|---| --- |
+| Business objective | `BO-Post-Visuals` | x | x |
+| Success metric | `SM-Accuracy>` | x | x |
+| Risk | `RI-Storage-Cost`| x | x |
+| Assumption or dependency | `AS-local` | `AS-client-maintains-stack` | x |
+| Feature | `FEAT-Verify-Source` | `FEAT-Intake-Data` | `FEAT-Generate-Visualization` |
+
 _Coin each slug from the concept itself: short, kebab-case, unique within its space. **Never renumber, rename, or repoint an identifier.** A new item gets a new slug; a retired item keeps its slug and is marked withdrawn. Cite items by identifier, never by position in a list ("the third objective")._
 
 _Why this matters more with an agent than it used to: ask an agent to insert a new objective into a list numbered `BO-1` through `BO-6` and it has two options. Renumber everything, silently breaking every citation in your use cases and your specification, or append out of order. No test you can write detects either one. A slug has neither failure mode, and it tells a reader what the item is at the place it is cited._
@@ -33,7 +41,10 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial draft from the client brief and first client meeting | _[Name]_ |
+| 2026-09-13 | 0.1 | Initial draft from the client brief | Turner DeMott |
+| 2026-09-20 | 1.0 | First draft post-meeting with Malachi | Turner DeMott |
+| 2026-09-21 | 1.1 | First team draft | Team |
+
 
 ---
 
@@ -41,9 +52,15 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 
 _[This document defines the goals, purpose, and boundaries of the project. It gives every stakeholder a shared understanding of what the software is for and the context it operates in: the business problem being solved, how the software fits into the client's world, and where the line falls between what is in scope and what is not.]_
 
+This document states why USPTO Patent Intelligence is being built, who it is for, what it must do, and what is expected to actually be shipped when the project is complete. This will allow the team, the client, and any AI agent working from this file to share one understanding of the product before design work starts.
+
 ### 1.1 Background
 
 _[Summarize the rationale and context for the new product, or for the changes to an existing one. Describe the situation that led to the decision to build it.]_
+
+This project is personal, separate from Malachi's companies. Regardless of whether his business sells, he wants to stay connected to the patent space by publishing data-driven IP content (primarily LinkedIn, occasionally Instagram) analyzing USPTO examination activity. He is the only intended user of the tool. He will use its output for his posts and reports, which should reach an audience that includes USPTO, Congress, and US Department of State readers.
+
+.
 
 _**Step 1: Describe the business.** Introduce the organization. Cover what it does (industry, products, services), its size (employees, locations), and the goals that relate to the problem you are solving._
 
@@ -54,6 +71,8 @@ _**Checklist:** Would a reader who has never heard of this organization understa
 ### 1.2 Current Process Flows (As-Is Process Flows)
 
 _[Most projects require everyone involved to have a firm grasp of the business process being created, replicated, or improved. Without that understanding there is little chance users adopt the new solution. Process flows are the most effective model for building it.]_
+
+There is no current process flow. We are creating a proof of concept that does not exist yet.
 
 _**Step 1: Diagram the current process.** Draw the process people execute **today**, before your software exists, as a mermaid flowchart with **one subgraph per actor** (roles, departments, existing systems). Show the sequence of activities, the decision points, and the handoffs between actors._
 
@@ -92,6 +111,7 @@ _**Checklist:** Is the business context clear to someone unfamiliar with it? Doe
 
 _[List every document referenced elsewhere in this one: the client's project brief, existing forms and reports, regulations, standards, competing products. Identify each by title, date, and where it can be obtained. The spreadsheet or screenshot your client showed you belongs here.]_
 
+--> Insert Client Brief
 ---
 
 ## 2. Business Requirements
@@ -102,13 +122,16 @@ _[Projects are launched in the belief that creating or changing a product will p
 
 _[State the problem being solved or the opportunity being exploited, in the client's own terms. One or two paragraphs. This is the answer to "why is anyone paying for this?"]_
 
+Producing one post today would cost him roughly eight hours, because the underlying USPTO Office Action and litigation data arrives as large, uncleaned, siloed bulk files that he has to reconcile and visualize by hand before he can write anything. He wants a private, low-cost, local tool that turns each week's USPTO release into verifiable, ready-to-publish charts and text, without depending on paid cloud AI services and without ever claiming something the data cannot support.
+
 ### 2.2 Business Objectives
 
 _[Summarize the business benefits the product will provide, **quantitatively and measurably**. Platitudes ("become recognized as a world-class provider") and vague improvements ("provide a more rewarding customer experience") are neither helpful nor verifiable.]_
 
+- _`BO-Post-Visuals`: Take data, create visualizations, and export in a format that can be posted on LinkedIn.
+
 _Examples:_
 
-- _`BO-grading-time`: Reduce the instructor's time to grade peer evaluations by 50%._
 - _`BO-submission-rate`: Increase the weekly activity report and peer evaluation submission rate by 20%._
 - _`BO-student-effort`: Reduce the time a student spends completing a weekly activity report and peer evaluation by 25%._
 
@@ -125,6 +148,9 @@ _Specify the indicators stakeholders will use to define and measure success on t
 _A success metric is sometimes the same statement as a business objective, when the objective happens to be measurable early. "Reduce time spent ordering chemicals to 10 minutes on 80 percent of orders" serves as both, because average order time can be measured during testing or shortly after release. Where an objective is measured a year out, write a metric that tracks the same thing on a shorter timeline: against an adoption objective measured annually, "track 60 percent of commercial chemical containers and 50 percent of proprietary chemicals within 4 weeks"._
 
 _For each metric give the indicator, where the number comes from, what it is today (the baseline), and what counts as success by when. A metric with no baseline is not measurable, and "we do not track that today" is a finding worth recording rather than a gap to paper over._
+
+- _`SM-Accuracy`: 100% accurate with data that backs up every visualization and trend when queried._
+
 
 _Examples:_
 
@@ -154,12 +180,12 @@ _Worked example:_
 
 | | |
 |---|---|
-| **For** | _students in the TCU senior design course_ |
-| **Who** | _need an easier way to submit and update weekly activity reports and peer evaluations_ |
-| **The** _Project Pulse_ | _is a web application_ |
-| **That** | _lets students submit reports and evaluations in one place, and lets instructors view and grade them without downloading anything_ |
-| **Unlike** | _the current process of spreadsheets and manual uploads to the learning management system_ |
-| **Our product** | _keeps the whole cycle in one system, so nothing is transcribed by hand_ |
+| **For** | Malachi (client, entrepreneur) |
+| **Who** | needs credible, data-backed visuals and text about USPTO examination activity without spending a full workday producing each post |
+| **The** | USPTO Patent Intelligence App| is a local desktop application |
+| **That** | takes in weekly USPTO Office Action and litigation bulk data, links records across datasets, and produces verifiable, publish-ready charts and text, entirely offline |
+| **Unlike** | the current possible process of manually doing everything|
+| **Our product** | saves time and produces verifiable results without relying on cloud AI |
 
 _**Use this in the meeting.** Read the filled-in table back to your client out loud and watch what they correct. It is the fastest way to discover you misunderstood the project, and it costs ninety seconds. Corrections go straight into [OPEN-ISSUES.md](OPEN-ISSUES.md)._
 
@@ -167,11 +193,16 @@ _**Use this in the meeting.** Read the filled-in table back to your client out l
 
 _[Draw the improved process, with your software in it, as a second mermaid flowchart in the same shape as the as-is flow. Show how the software interacts with each actor, which steps it automates, and which pain point from section 1.2 each change addresses. Label the steps that are new or significantly changed, and say plainly which manual steps **remain** and why. There may be several major flows.]_
 
+--> This will come after the data is sent to us and the process is outlined by Malachi (21 September 2026)
+
 _The point of drawing both is the comparison. If the two diagrams look alike, either you have not understood the current process or the software is not worth building._
 
 ### 2.6 Risks
 
 _[Summarize the major business risks of building this product, and of not building it. Categories include competition, timing, user acceptance, implementation, and negative impact on the business. Business risks are not project risks: "a teammate might drop the course" is a project risk and does not belong here. Give probability and impact for each, and a mitigation where you have one.]_
+
+- _`Cost`: Cost must be 0 or close to it. No api costs, especially AI. Storage cost may be an issue as Malachi wants years of history stored to support Visualizations._
+
 
 _Examples:_
 
@@ -184,6 +215,9 @@ _**State risks as mechanisms, not categories.** "Security risk" names a category
 ### 2.7 Business Assumptions and Dependencies
 
 _[An assumption is something you believe without proof, which would force this document to change if it turned out false. A dependency is something outside your control that the project relies on. Both live here under `AS-*`.]_
+
+- _`AS-local`: Client Malachi wants the whole process to run and store locally. Must be local for security and cost._
+
 
 _Examples:_
 
@@ -209,6 +243,8 @@ _A stakeholder is not always a user. The person paying for the software, the per
 
 _**Attitude is the column students leave blank, and the one that predicts trouble.** A stakeholder whose workload increases because of your software is not automatically supportive, and finding that out in December is too late._
 
+| Malachi (client) |	Can efficiently produce content for posts | Supportive, driving the project |	Traceable/verifiable claims, low/zero AI cost, clean visuals, maybe historical pull too |	Non-technical on execution side; MacBook Air, 24GB RAM, no discrete GPU, busy (but still very committed) | Yes |
+
 ### 3.2 User Environment
 
 _[Describe the working environment of the target users:_
@@ -218,6 +254,10 @@ _[Describe the working environment of the target users:_
 - _Any environmental constraints: mobile, outdoors, noisy, gloved hands, poor connectivity?_
 - _Which platforms are in use today, and which are planned?_
 - _What other applications are in use, and does yours have to integrate with them?]_
+
+Malachi, working in a weekly cycle: download the week's release, process/visualize, write, publish. No mobile, outdoor, or connectivity constraints. This is just desktop work. Current platform: a 2022 MacBook Air, 24GB RAM, 2TB SSD, no discrete GPU. He will possibly upgrade his laptop at some point. He'd be open to Windows eventually but does not need it now. No integration with other applications is required.
+
+
 
 ### 3.3 Alternatives and Competition
 
@@ -229,15 +269,22 @@ _[Identify the alternatives your stakeholders see as available: buying a competi
 
 _Always include the status quo as a row. It is the alternative that wins most often, and the one your product actually has to beat._
 
----
+| Current process (if Malachi was to do it on his own) | results would likely be acceptable | would be very time consuming, and results may not equal our final product |
+
+| Current company tools | tackles part of the job already | does not do what he is looking for, scope too narrow|
+
 
 ## 4. Scope and Limitations
 
 _[The section you will cite most often. Scope is what keeps a friendly client's good ideas from consuming your semester. When a new request arrives in October, this is what you point at.]_
 
+Self-contained, single-user desktop app. Data flows in one direction from USPTO's bulk files into the app. There is no outbound API integration to LinkedIn or Instagram — Malachi manually copies the generated images and text out.
+
 ### 4.1 Product Perspective
 
 _[Put the product in context relative to other systems and the user's environment. If it is independent and self-contained, say so. If it is one component of something larger, describe how they interact and identify the interfaces between them. A context diagram shows this most clearly: your system as one box, every external actor and system around it, and a labeled arrow for each thing that crosses the boundary.]_
+
+_This product will live alone outside any company or other products. Self contained._
 
     ```mermaid
     flowchart LR
@@ -252,6 +299,14 @@ _[Put the product in context relative to other systems and the user's environmen
 _[List and briefly describe the major product features. A feature is a high-level **capability** the system provides in order to deliver a benefit: an externally visible service, not an implementation detail.]_
 
 _Because this document is read by a wide range of people, keep the detail general enough for everyone to follow while giving your team enough to build a use-case model from. **Use cases are derived from these features**, so a feature too vague to decompose is too vague._
+
+| Feature | `FEAT-Verify-Source` | `FEAT-Upload-Zip` | `FEAT-Generate-Visualization` |
+
+- _`FEAT-Verify-Source`: Display where the data is stored that created any such visualization._
+- _`FEAT-Intake-Data`: Easy drag and drop data to app to create visualizations._
+- _`FEAT-Generate-Visualization`: Take any data input and automatically create trends, visuals, and output analyzation._
+
+
 
 _Guidelines:_
 
@@ -272,6 +327,10 @@ _Examples:_
 
 _[Of the features above, which ones ship in the release you actually deliver in December? Name them by identifier. Then name what is explicitly **out**, also by identifier, so it is on the record.]_
 
+_**In scope for the MVP:** `FEAT-Intake-Data`, `FEAT-Generate-Visualization`, `FEAT-Verify-Source`_
+
+
+
 _**In scope for the MVP:** `FEAT-...`, `FEAT-...`_
 
 _**Explicitly out of scope:** `FEAT-...` (reason), `FEAT-...` (reason)_
@@ -283,3 +342,5 @@ _Ask your client the question directly: "If we can deliver only one of these in 
 _[Summarize what it takes to get this into its operating environment. How will users reach it? Are they spread across locations or time zones? What infrastructure has to change for capacity, network access, data storage, or data migration? Who trains the users? Who maintains it after this team graduates, and what does that person already know how to run?]_
 
 _That last question shapes your architecture, so ask it in the first client meeting rather than the last._
+
+Runs entirely on Malachi's own machine. He installs and launches it himself. No training is really needed ideally. It should be straightforward for him to operate. He will maintain it after the team graduates. The stack should stay simple, there should be little need for updates, and maintenance should be very minimal. No hosting or subscription cost is acceptable.
