@@ -3,7 +3,7 @@
 **Project:** USPTO Patent Intelligence
 **Team:** 6
 **Client:** USPTO
-**Version:** 0.1
+**Version:** 1.1
 
 ---
 
@@ -25,6 +25,14 @@ _Identifiers here are **name-based slugs**, never numbers._
 | Assumption or dependency | `AS-<slug>` | `AS-client-maintains-stack` |
 | Feature | `FEAT-<slug>` | `FEAT-performance-tracking` |
 
+| Space | Example | Example | Example |
+|---|---|---| --- |
+| Business objective | `BO-Post-Visuals` | x | x |
+| Success metric | `SM-Accuracy>` | x | x |
+| Risk | `RI-Storage-Cost`| x | x |
+| Assumption or dependency | `AS-local` | `AS-client-maintains-stack` | x |
+| Feature | `FEAT-Verify-Source` | `FEAT-Intake-Data` | `FEAT-Generate-Visualization` |
+
 _Coin each slug from the concept itself: short, kebab-case, unique within its space. **Never renumber, rename, or repoint an identifier.** A new item gets a new slug; a retired item keeps its slug and is marked withdrawn. Cite items by identifier, never by position in a list ("the third objective")._
 
 _Why this matters more with an agent than it used to: ask an agent to insert a new objective into a list numbered `BO-1` through `BO-6` and it has two options. Renumber everything, silently breaking every citation in your use cases and your specification, or append out of order. No test you can write detects either one. A slug has neither failure mode, and it tells a reader what the item is at the place it is cited._
@@ -34,7 +42,8 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-09-13 | 0.1 | Initial draft from the client brief | Turner DeMott |
-| 2026-09-13 | 1.0 | First draft post-meeting with Malachi | Turner DeMott |
+| 2026-09-20 | 1.0 | First draft post-meeting with Malachi | Turner DeMott |
+| 2026-09-21 | 1.1 | First team draft | Team |
 
 
 ---
@@ -62,6 +71,8 @@ _**Checklist:** Would a reader who has never heard of this organization understa
 ### 1.2 Current Process Flows (As-Is Process Flows)
 
 _[Most projects require everyone involved to have a firm grasp of the business process being created, replicated, or improved. Without that understanding there is little chance users adopt the new solution. Process flows are the most effective model for building it.]_
+
+There is no current process flow. We are creating a proof of concept that does not exist yet.
 
 _**Step 1: Diagram the current process.** Draw the process people execute **today**, before your software exists, as a mermaid flowchart with **one subgraph per actor** (roles, departments, existing systems). Show the sequence of activities, the decision points, and the handoffs between actors._
 
@@ -100,6 +111,7 @@ _**Checklist:** Is the business context clear to someone unfamiliar with it? Doe
 
 _[List every document referenced elsewhere in this one: the client's project brief, existing forms and reports, regulations, standards, competing products. Identify each by title, date, and where it can be obtained. The spreadsheet or screenshot your client showed you belongs here.]_
 
+--> Insert Client Brief
 ---
 
 ## 2. Business Requirements
@@ -116,9 +128,10 @@ Producing one post today would cost him roughly eight hours, because the underly
 
 _[Summarize the business benefits the product will provide, **quantitatively and measurably**. Platitudes ("become recognized as a world-class provider") and vague improvements ("provide a more rewarding customer experience") are neither helpful nor verifiable.]_
 
+- _`BO-Post-Visuals`: Take data, create visualizations, and export in a format that can be posted on LinkedIn.
+
 _Examples:_
 
-- _`BO-grading-time`: Reduce the instructor's time to grade peer evaluations by 50%._
 - _`BO-submission-rate`: Increase the weekly activity report and peer evaluation submission rate by 20%._
 - _`BO-student-effort`: Reduce the time a student spends completing a weekly activity report and peer evaluation by 25%._
 
@@ -135,6 +148,9 @@ _Specify the indicators stakeholders will use to define and measure success on t
 _A success metric is sometimes the same statement as a business objective, when the objective happens to be measurable early. "Reduce time spent ordering chemicals to 10 minutes on 80 percent of orders" serves as both, because average order time can be measured during testing or shortly after release. Where an objective is measured a year out, write a metric that tracks the same thing on a shorter timeline: against an adoption objective measured annually, "track 60 percent of commercial chemical containers and 50 percent of proprietary chemicals within 4 weeks"._
 
 _For each metric give the indicator, where the number comes from, what it is today (the baseline), and what counts as success by when. A metric with no baseline is not measurable, and "we do not track that today" is a finding worth recording rather than a gap to paper over._
+
+- _`SM-Accuracy`: 100% accurate with data that backs up every visualization and trend when queried._
+
 
 _Examples:_
 
@@ -166,7 +182,7 @@ _Worked example:_
 |---|---|
 | **For** | Malachi (client, entrepreneur) |
 | **Who** | needs credible, data-backed visuals and text about USPTO examination activity without spending a full workday producing each post |
-| **The** App... (Need a name)| is a local desktop application |
+| **The** | USPTO Patent Intelligence App| is a local desktop application |
 | **That** | takes in weekly USPTO Office Action and litigation bulk data, links records across datasets, and produces verifiable, publish-ready charts and text, entirely offline |
 | **Unlike** | the current possible process of manually doing everything|
 | **Our product** | saves time and produces verifiable results without relying on cloud AI |
@@ -177,11 +193,16 @@ _**Use this in the meeting.** Read the filled-in table back to your client out l
 
 _[Draw the improved process, with your software in it, as a second mermaid flowchart in the same shape as the as-is flow. Show how the software interacts with each actor, which steps it automates, and which pain point from section 1.2 each change addresses. Label the steps that are new or significantly changed, and say plainly which manual steps **remain** and why. There may be several major flows.]_
 
+--> This will come after the data is sent to us and the process is outlined by Malachi (21 September 2026)
+
 _The point of drawing both is the comparison. If the two diagrams look alike, either you have not understood the current process or the software is not worth building._
 
 ### 2.6 Risks
 
 _[Summarize the major business risks of building this product, and of not building it. Categories include competition, timing, user acceptance, implementation, and negative impact on the business. Business risks are not project risks: "a teammate might drop the course" is a project risk and does not belong here. Give probability and impact for each, and a mitigation where you have one.]_
+
+- _`Cost`: Cost must be 0 or close to it. No api costs, especially AI. Storage cost may be an issue as Malachi wants years of history stored to support Visualizations._
+
 
 _Examples:_
 
@@ -194,6 +215,9 @@ _**State risks as mechanisms, not categories.** "Security risk" names a category
 ### 2.7 Business Assumptions and Dependencies
 
 _[An assumption is something you believe without proof, which would force this document to change if it turned out false. A dependency is something outside your control that the project relies on. Both live here under `AS-*`.]_
+
+- _`AS-local`: Client Malachi wants the whole process to run and store locally. Must be local for security and cost._
+
 
 _Examples:_
 
@@ -260,6 +284,8 @@ Self-contained, single-user desktop app. Data flows in one direction from USPTO'
 
 _[Put the product in context relative to other systems and the user's environment. If it is independent and self-contained, say so. If it is one component of something larger, describe how they interact and identify the interfaces between them. A context diagram shows this most clearly: your system as one box, every external actor and system around it, and a labeled arrow for each thing that crosses the boundary.]_
 
+_This product will live alone outside any company or other products. Self contained._
+
     ```mermaid
     flowchart LR
       Student[Student] --> PP[Project Pulse]
@@ -273,6 +299,14 @@ _[Put the product in context relative to other systems and the user's environmen
 _[List and briefly describe the major product features. A feature is a high-level **capability** the system provides in order to deliver a benefit: an externally visible service, not an implementation detail.]_
 
 _Because this document is read by a wide range of people, keep the detail general enough for everyone to follow while giving your team enough to build a use-case model from. **Use cases are derived from these features**, so a feature too vague to decompose is too vague._
+
+| Feature | `FEAT-Verify-Source` | `FEAT-Upload-Zip` | `FEAT-Generate-Visualization` |
+
+- _`FEAT-Verify-Source`: Display where the data is stored that created any such visualization._
+- _`FEAT-Intake-Data`: Easy drag and drop data to app to create visualizations._
+- _`FEAT-Generate-Visualization`: Take any data input and automatically create trends, visuals, and output analyzation._
+
+
 
 _Guidelines:_
 
@@ -292,6 +326,10 @@ _Examples:_
 ### 4.3 MVP Scope
 
 _[Of the features above, which ones ship in the release you actually deliver in December? Name them by identifier. Then name what is explicitly **out**, also by identifier, so it is on the record.]_
+
+_**In scope for the MVP:** `FEAT-Intake-Data`, `FEAT-Generate-Visualization`, `FEAT-Verify-Source`_
+
+
 
 _**In scope for the MVP:** `FEAT-...`, `FEAT-...`_
 
