@@ -1,6 +1,6 @@
 # Business Rules
 
-**Project:** USPTO Patent Analytics and Visualization Platform
+**Project:** USPTO Patent Intellignece
 **Team:** 6
 **Client:** Malachi from Ipelint
 **Version:** 0.1
@@ -107,16 +107,9 @@ _[Group rules under topic headings that fit your project. The Project Pulse head
 _Format each rule as a bold identifier, the rule in one sentence, then its source. Worked examples:]_
 
 ### 2.1 Patent Prosecution and Office Actions
-- **`BR-active-weeks`:** A student may submit or edit a weekly activity report only during a week that the course section has marked active.
-  **Source:** course policy, confirmed by the instructor 2026-09-10.
-- **`BR-section-admin-only`:** Only a course admin may create or edit a course section, configure its active-weeks window (see `BR-active-weeks`), or assign a rubric to it.
-  **Source:** department policy on grade-bearing records.
-- **`BR-artifact-key-unique`:** Every artifact key is unique within a team and remains stable across edits to the artifact's content.
-  **Source:** team decision, 2026-09-10. **Candidate for the specification instead of this file**, since the team, not the client, would approve a change.
-
 - **`BR-art-unit-assignment`:** Every patent application is assigned to an art unit for examination by subject-matter specialists.
   **Source:** Client interview, background explanation, 2026-09-17.
-- **`BR-office-action-issued`:** If a patent examiner determines that an application does not satisfy patentability requirements, an office action is issued.
+- **`BR-office-action-issued`:** Office action is the process of determing whether a patent is to be accepted or rejected. 
   **Source:** Client interview, patent prosecution process explanation, 2026-09-17.
 - **`BR-102-rejection`:** A Section 102 rejection indicates that prior art exists that prevents the claimed invention from being considered novel.
   **Source:** Client interview, patent prosecution explanation, 2026-09-17.
