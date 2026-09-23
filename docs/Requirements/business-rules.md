@@ -1,8 +1,8 @@
 # Business Rules
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
+**Project:** USPTO Patent Analytics and Visualization Platform
+**Team:** 6
+**Client:** Malachi from Ipelint
 **Version:** 0.1
 
 ---
@@ -82,7 +82,7 @@ _The Source column is the defense. Every rule traces to a document or a person, 
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial rules from the client brief and first client meeting | _[Name]_ |
+| 2026-09-23 | 0.1 | Initial rules from the client brief and first client meeting | Koen |
 
 ---
 
@@ -92,11 +92,13 @@ _The Source column is the defense. Every rule traces to a document or a person, 
 
 _[One paragraph: this document collects the policies, regulations, standards, and formulas that govern the business your software operates in, so the specification can cite them rather than restate them.]_
 
+This document captures the business rules, industry practices, data relationships, and operational constraints that govern the patent analytics domain for the USPTO visualization platform. These rules originate from patent prosecution processes, USPTO data structures, and the client's professional workflow, allowing software requirements to reference them without restating them.
+
 ### 1.2 Scope
 
 _[Which parts of the client's business these rules cover, and which are out of scope. If your client's organization has rules that your system does not touch, say so here rather than silently omitting them.]_
 
----
+These rules cover the collection, analysis, historical storage, linkage, and visualization of publicly available USPTO patent-related datasets, including office action, patent grant, and litigation data. The document also covers patent prosecution concepts that influence analysis. Internal software architecture decisions, technology choices, user interface design decisions, and implementation details are outside the scope of this document.
 
 ## 2. Rules
 
@@ -104,14 +106,66 @@ _[Group rules under topic headings that fit your project. The Project Pulse head
 
 _Format each rule as a bold identifier, the rule in one sentence, then its source. Worked examples:]_
 
-### 2.1 _[Topic]_
-
+### 2.1 Patent Prosecution and Office Actions
 - **`BR-active-weeks`:** A student may submit or edit a weekly activity report only during a week that the course section has marked active.
   **Source:** course policy, confirmed by the instructor 2026-09-10.
 - **`BR-section-admin-only`:** Only a course admin may create or edit a course section, configure its active-weeks window (see `BR-active-weeks`), or assign a rubric to it.
   **Source:** department policy on grade-bearing records.
 - **`BR-artifact-key-unique`:** Every artifact key is unique within a team and remains stable across edits to the artifact's content.
   **Source:** team decision, 2026-09-10. **Candidate for the specification instead of this file**, since the team, not the client, would approve a change.
+
+- **`BR-art-unit-assignment`:** Every patent application is assigned to an art unit for examination by subject-matter specialists.
+  **Source:** Client interview, background explanation, 2026-09-17.
+- **`BR-office-action-issued`:** If a patent examiner determines that an application does not satisfy patentability requirements, an office action is issued.
+  **Source:** Client interview, patent prosecution process explanation, 2026-09-17.
+- **`BR-102-rejection`:** A Section 102 rejection indicates that prior art exists that prevents the claimed invention from being considered novel.
+  **Source:** Client interview, patent prosecution explanation, 2026-09-17.
+- **`BR-103-rejection`:** A Section 103 rejection indicates that an invention is considered obvious based on prior art.
+  **Source:** Client interview, patent prosecution explanation, 2026-09-17.
+- **`BR-112-rejection`:** A Section 112 rejection concerns deficiencies in the specification or claims of a patent application.
+  **Source:** Client interview, patent prosecution explanation, 2026-09-17.
+- **`BR-double-patenting`:** A double patenting rejection indicates that multiple patentable concepts should be separated rather than protected in a single patent.
+  **Source:** Client interview, patent prosecution explanation, 2026-09-17.
+
+### 2.2 Patent Data Sources
+- **`BR-weekly-uspto-publication`:** USPTO office action data is distributed in periodic ZIP-file releases.
+**Source:** Client interview, USPTO data discussion, 2026-09-17.
+- **`BR-weekly-office-action-data`:** Office action datasets are published weekly and serve as a primary source of patent prosecution information.
+**Source:** Client interview, USPTO data discussion, 2026-09-17.
+- **`BR-separate-dataset-domains`:** Patent prosecution, patent grant, and litigation information are maintained as separate datasets.
+**Source:** Client interview, workflow discussion, 2026-09-17.
+ 
+### 2.3 Patent Record Relationships
+- **`BR-cross-record-linkage`:** Patent applications, granted patents, and litigation records may refer to the same invention lifecycle and therefore have meaningful relationships that must be traceable.
+**Source:** Client interview, workflow discussion regarding patent history, 2026-09-17.
+- **`BR-patent-lineage`:** Patent family and child-patent relationships are important components of patent history analysis.
+**Source:** Client interview, workflow discussion, 2026-09-17.
+ 
+### 2.4 Historical Analysis
+- **`BR-historical-analysis`:** Patent analysis may rely on historical records collected across multiple years.
+**Source:** Client interview, historical reporting discussion, 2026-09-17.
+- **`BR-litigation-history-window`:** Litigation datasets may contain approximately twenty-one years of historical records.
+**Source:** Client interview, dataset discussion, 2026-09-17.
+- **`BR-prosecution-history-window`:** Patent prosecution datasets commonly contain approximately three to four years of historical records.
+**Source:** Client interview, dataset discussion, 2026-09-17.
+ 
+### 2.5 Analytics and Reporting
+- **`BR-evidence-based-analysis`:** Analytical conclusions must be supported by evidence contained within the underlying patent data.
+**Source:** Client statement: "using concrete evidence from the given numbers," 2026-09-17.
+- **`BR-data-driven-insights`:** Analytical observations must be derived from patent data rather than unsupported assumptions.
+**Source:** Client interview, discussion of analysis accuracy, 2026-09-17.
+- **`BR-rejection-distribution-metric`:** The distribution of office actions by rejection category is a meaningful patent-analysis measure.
+**Source:** Client examples of desired analyses, 2026-09-17.
+- **`BR-pendency-trend-metric`:** Patent pendency over time is a meaningful patent-analysis measure.
+**Source:** Client examples of desired analyses, 2026-09-17.
+ 
+### 2.6 Data Jurisdictions
+- **`BR-uspto-primary-source`:** USPTO data serves as the primary source of patent analysis.
+**Source:** Client interview, project scope discussion, 2026-09-17.
+- **`BR-international-expansion`:** Patent analysis may be expanded to include international patent datasets such as those provided by the European Patent Office and Chinese patent authorities.
+**Source:** Client interview, future roadmap discussion, 2026-09-17.
+- **`BR-jurisdictional-differences`:** Patent systems from different jurisdictions are governed by different legal frameworks and must not be treated as equivalent.
+**Source:** Client statement regarding European patent data and differing laws, 2026-09-17.
 
 _[That third entry is deliberate. Flag rules you are not sure about rather than dropping them; deciding whether something is a rule or a requirement is a conversation to have with your client, and it is worth having.]_
 
