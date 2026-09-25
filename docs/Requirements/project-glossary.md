@@ -108,4 +108,12 @@ Office action data in USPTO Data consists of official written notifications and 
 
 **Source:** USPTO Site 
 
+### Grant 
 
+Means a patent application has successfully met all legal requirements and has been officially awarded as an enforceable patent.
+
+ Unlike a published patent application, a granted patent gives the owner the legal right to stop others from making, using, selling, or importing the invention in the U.S
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
