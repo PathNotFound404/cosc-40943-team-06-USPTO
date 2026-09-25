@@ -163,6 +163,48 @@ Sort criteria: criterion name, ascending.
 
 ---
 
+**UC-FEAT-decompile-files:** Selected bulk files from USPTO office action data is decompiled
+**UC ID and Name:** UC-FEAT-decompile-files: Decompile files
+**Created By:** Bradley Helmholz
+**Date Created:** [2026-09-22]
+**Primary actor:** User
+**Secondary Actors:** None
+**Trigger:** User inputs file to decompile
+**Description:** The user inputs their bulk data file that has been chosen into the system, and it is decompiled for later use
+**Preconditions:**
+- PRE-1. User has bulk USPTO office action data file available for selection
+**Postconditions:**
+- POST-1. Bulk file is decompiled into multiple usable files of data
+**Main Success Scenario:**
+1. User selects bulk data file
+2. Indicates to decompile
+3. System validates selected file is supported bulk data format
+4. System extracts individual records contained within
+5. System converts each record into usable file of data
+6. System stores decompiled files in quick database for later use
+7. System confirms to user that decompiling is complete
+8. Use case ends
+**Extensions:**
+- 3a. Selected file is not supported bulk data format:
+    - 3a1. System alerts user that file format is invalid
+    - 3a2. User selects different file, or terminates use case
+- 4a. Bulk file is corrupted or unreadable
+    - 4a1. System alerts user that file could not be read
+    - 4a2. User selected different file, or terminates use case
+- 5a. One or more records fail to convert to usable format
+    - 5a1. System logs failed records count and continues processing remainder
+    - System notifies user of number of records that failed to convert
+**Priority: High**
+**Frequency of Use:** Occasional; used primarily once a week in the long run when new USPTO office action data acquired
+**Business Rules:** none
+**Associated Information:**
+**Related Use Cases:**
+**Assumptions:**
+**Open Issues:** none
+
+
+
+
 ## Working these with your agent
 
 _[Delegate: drafting the main success scenario once you have the trigger and the goal; proposing extensions you have not thought of, which it is genuinely good at; turning a filled-in use case into a first set of test cases; checking that every `BR-*` you cite exists in [business-rules.md](business-rules.md).]_
