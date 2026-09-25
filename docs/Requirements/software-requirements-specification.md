@@ -1,9 +1,9 @@
 # Software Requirements Specification
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
-**Version:** 0.1
+**Project:** USPTO Patent Intelligence
+**Team:** 6
+**Client:** USPTO
+**Version:** 1.1
 
 ---
 
@@ -38,15 +38,17 @@ _Requirements cited from elsewhere keep their own identifiers: `UC-*` from [use-
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial draft | _[Name]_ |
+| _[2027-09-24]_ | 1.1 | Initial draft | _[Edwin Rodriguez]_ |
 
 ---
 
 ## 1. Introduction
 
-### 1.1 The purpose of _[project name]_
+### 1.1 The purpose of USPTO Patent Intelligence
 
 _[What the system is for: who wants it, why, and who will use it. Even though the vision and scope answers this, restate it in a paragraph here, because people read this document without having read that one.]_
+
+USPTO Office Action data is public but hard to analyze. It comes as large weekly ZIP files, bulk downloads, and API records. USPTO Patent Intelligence is a desktop application for macOS that takes this data, processes it entirely on the user's computer, and turns it into dashboards, trend analysis, flagged anomalies, and AI-generated summaries. It is for analysts who want to know what is happening in patent examination, where it is happening, and which patterns need a closer look. All processing and AI run locally, and no data is sent to the cloud.
 
 ### 1.2 The purpose of this document
 
@@ -54,9 +56,13 @@ _[What this specification covers and for which release.]_
 
 _Example: "This document describes the functional and nonfunctional requirements for release 1.0 of the Cafeteria Ordering System. It serves as the reference for the project's requirements, defining the scope, functionality, and constraints for stakeholders, developers, and testers."]_
 
+This document describes the functional and nonfunctional requirements for release 1.0 of USPTO Patent Intelligence. It is the reference for the project's scope, features, and constraints for the client, developers, and testers.
+
 ### 1.3 Document conventions
 
 _[Any typographical conventions, and the identifier formats above, so that someone adding a requirement later knows how to name it.]_
+
+
 
 ### 1.4 References
 
@@ -77,9 +83,12 @@ _[Every document this specification refers to, with a link. At minimum, the four
 
 _[How this system relates to other systems and to the user's environment. Self-contained, or one component of something larger? Link to the product perspective section of your vision and scope and to your architecture's context diagram rather than redrawing them.]_
 
+
 ### 2.2 User classes and characteristics
 
 _[The kinds of user, and what distinguishes them: frequency of use, technical skill, privilege level, whether they are inside or outside the client's organization. Link to the stakeholder profiles in your vision and scope; what belongs here is what affects the software's behavior, especially permissions.]_
+
+
 
 ### 2.3 Operating environment
 
@@ -90,6 +99,12 @@ _Examples:_
 - _`OE-supported-browsers`: The system shall operate correctly on the current and previous major versions of Chrome, Firefox, Safari, and Edge._
 - _`OE-server-platform`: The system shall run on a server running the current corporate-approved version of Linux._
 - _`OE-access-paths`: The system shall permit access from the corporate intranet, from a VPN connection, and from Android and iOS phones and tablets._
+
+- OE-desktop-os: The application shall run on macOS and Windows. Minimum versions: macOS 14 and Windows 11 (TBD).
+- OE-minimum-hardware: The application shall run on a computer with at least 16 GB of RAM and 50 GB of free storage. A GPU is optional (TBD).
+- OE-hardware-adaptive: When it starts, the application shall detect the available CPU, GPU, RAM, and storage, and adjust its processing and AI model choice to match.
+- OE-offline-operation: Once data is loaded, the application shall do all processing, analysis, and AI work without an internet connection.
+- OE-no-manual-dependencies: The application shall bundle or automatically start everything it needs (database, runtimes, AI models), so the user never installs or configures them manually.
 
 ### 2.4 Design and implementation constraints
 
@@ -103,6 +118,13 @@ _Examples:_
 
 _The constraint students forget: **who maintains this after you graduate, and what do they already know how to run?** If the answer is one person who knows Python, a Spring Boot service is a constraint violation nobody wrote down._
 
+- CO-local-execution: The application shall not use cloud AI services or send user data off the computer.
+- CO-open-weight-models: AI features shall use locally run open-weight models, such as Llama-family models.
+- CO-swappable-models: It shall be possible to replace or upgrade the AI model without changing code.
+- CO-layer-separation: The data processing, analytics, AI, and user interface shall be separate layers that can each be tested independently.
+- CO-technology-evaluation: The technologies suggested in the brief are not mandatory. The team shall document its technology choice for each layer.
+- CO-model-licensing: All bundled models and runtimes shall have licenses that allow the client's intended use (TBD).
+
 ### 2.5 Assumptions and dependencies
 
 _[An assumption is a factor you believe true without proof, which would change these requirements if it turned out false. A dependency is something outside your control that the project relies on: an external API, a third-party library, a change someone else has to make.]_
@@ -113,6 +135,11 @@ _Examples:_
 - _`DE-payroll-integration`: Operation depends on changes being made in the Payroll System to accept payment requests for meals ordered through this system._
 
 ---
+- AS-office-action-format: The format of USPTO Office Action files stays stable during the project.
+- AS-user-hardware: Users' computers meet the minimum hardware requirement.
+- DE-uspto-bulk-data: The project depends on the USPTO continuing to publish Office Action data as weekly ZIP files and bulk downloads.
+- DE-uspto-api: API access depends on the USPTO Open Data Portal, which requires a USPTO.gov account and an API key. Which API currently provides Office Action data is TBD.
+- DE-local-llm-runtime: AI features depend on a third-party local AI runtime and third-party model files.
 
 ## 3. Project Glossary
 
