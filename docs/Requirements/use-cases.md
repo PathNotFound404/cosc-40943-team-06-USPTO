@@ -163,18 +163,28 @@ Sort criteria: criterion name, ascending.
 
 ---
 
-**UC-FEAT-decompile-files:** Selected bulk files from USPTO office action data is decompiled
+### UC-FEAT-decompile-files: Selected bulk files from USPTO office action data is decompiled
+
 **UC ID and Name:** UC-FEAT-decompile-files: Decompile files
+
 **Created By:** Bradley Helmholz
+
 **Date Created:** [2026-09-22]
+
 **Primary actor:** User
+
 **Secondary Actors:** None
+
 **Trigger:** User inputs file to decompile
+
 **Description:** The user inputs their bulk data file that has been chosen into the system, and it is decompiled for later use
+
 **Preconditions:**
 - PRE-1. User has bulk USPTO office action data file available for selection
+
 **Postconditions:**
 - POST-1. Bulk file is decompiled into multiple usable files of data
+
 **Main Success Scenario:**
 1. User selects bulk data file
 2. Indicates to decompile
@@ -184,6 +194,7 @@ Sort criteria: criterion name, ascending.
 6. System stores decompiled files in quick database for later use
 7. System confirms to user that decompiling is complete
 8. Use case ends
+
 **Extensions:**
 - 3a. Selected file is not supported bulk data format:
     - 3a1. System alerts user that file format is invalid
@@ -194,14 +205,94 @@ Sort criteria: criterion name, ascending.
 - 5a. One or more records fail to convert to usable format
     - 5a1. System logs failed records count and continues processing remainder
     - System notifies user of number of records that failed to convert
+
 **Priority: High**
+
 **Frequency of Use:** Occasional; used primarily once a week in the long run when new USPTO office action data acquired
-**Business Rules:** none
+
+**Business Rules:**
+- `BR-weekly-uspto-publication`
+- `BR-weekly-office-action-data`
+- `BR-art-unit-assignment`
+- `BR-office-action-issued`
+
 **Associated Information:**
+
 **Related Use Cases:**
-**Assumptions:**
+
+**Assumptions:** none
+
 **Open Issues:** none
 
+-----
+
+### UC-FEAT-query-ai: Ask local AI a question about processed data
+
+**UC ID and Name:** UC-FEAT-query-ai: Ask AI assistant
+
+**Created By:** Bradley Helmholz
+
+**Date Created:** [2026-09-22]
+
+**Primary actor:** User
+
+**Secondary Actors:** None
+
+**Trigger:** User submits natural language query about processed data
+
+**Description:** The user inputs their question in natural language and local AI model answers strictly from processed dataset without unknown extrapolation, citing underlying data used without fabrication
+
+**Preconditions:**
+- PRE-1. Data has been processed and is available for query
+- PRE-2. Local AI model is loaded and running
+
+**Postconditions:**
+- POST-1. Answer based on existing given processed data is returned to the user, along with citations
+
+**Main Success Scenario:**
+1. User moves to AI assistant window
+2. User submits natural language question
+3. System retrieves relevant records currently loaded that match the question
+4. System passes retrieved records to local AI model and grounding context
+5. System generates answer using only retrieved records
+6. System confirms that local AI model has information grounded in real context
+7. System displays answer along with citations to course material
+8. Use case ends
+
+**Extensions:**
+- 2a. No relevant records found
+    - 2a1. System informs user no data supports answer to given question and use case ends
+- 2b. AI model cannot understand the query user submitted
+    - 2b1. System informs user they cannot understand the query that has been submitted and use case ends
+- 4a. AI model cannot produce answer strictly grounded in retrieved records
+    - 4a1. System informs user no verifiable answer can be generated based on the records along, instead of returning unsupported answer, and use case ends
+
+**Priority:** High
+**Frequency of Use:** Frequent; user may query many times on given datasets about many topics and analysis points
+
+**Business Rules:**
+- `BR-office-action-issued`
+- `BR-102-rejection`
+- `BR-103-rejection`
+- `BR-112-rejection`
+- `BR-double-patenting`
+- `BR-weekly-uspto-publication`
+- `BR-weekly-office-action-data`
+- `BR-separate-dataset-domains`
+- `BR-cross-record-linkage`
+- `BR-patent-lineage`
+- `BR-evidence-based-analysis`
+- `BR-data-driven-insights`
+- `BR-rejection-distribution-metric`
+- `BR-pendency-trend-metric`
+
+**Associated Information:**
+
+**Related Use Cases:** `UC-FEAT-decompile-files`
+
+**Assumptions:** AI model is running. Ability to interface with data
+
+**Open Issues:** none
 
 
 
