@@ -91,4 +91,21 @@ A specialized group of patent examiners within the U.S. Patent and Trademark Off
 
 **Source:** USPTO Site 
 
-### Office Action Data  
+### Office Action Data
+
+Office action data in USPTO Data consists of official written notifications and text-based records issued by patent and trademark examiners to applicants during the examination process
+
+**What is an Office Action**
+- Official Decision: A formal letter explaining an examiner's decision on whether an application meets legal standards for patentability or trademark registration
+- Rejections and Requirements: It details claim rejections, legal refusals, or corrections needed (such as clarifying goods or citing prior art)
+-Interactive Process: It prompts the applicant to file a formal, timed response or amendment to continue prosecution.
+
+**What the USPTO Data Includes**
+- Office Action Research Datasets: Structured files containing traits, rejections, and metadata extracted from millions of historical office actions using natural language processing.
+- Text Retrieval APIs: Tools via the USPTO Open Data Portal that allow researchers and developers to search, query, and retrieve document-level data and text versions of office actions and rejections.
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
+
+
