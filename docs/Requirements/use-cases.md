@@ -1,9 +1,9 @@
 # Use Cases
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
-**Version:** 0.1
+**Project:** USPTO Patent Intelligence _
+**Team:** Group 6, Bradley, Koen, Cody, Edwin, Tanner, Turner
+**Client:** Malachi
+**Version:** 1.0
 
 ---
 
@@ -30,7 +30,7 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 | Date | Version | Description | Author |
 |---|---|---|---|
 | _[YYYY-MM-DD]_ | 0.1 | Initial use cases derived from the vision and scope feature list | _[Name]_ |
-
+| _[2026-09-25]_ | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
 ---
 
 ## 1. Introduction
@@ -293,6 +293,135 @@ Sort criteria: criterion name, ascending.
 **Assumptions:** AI model is running. Ability to interface with data
 
 **Open Issues:** none
+
+### UC-FEAT-create-visuals: The user creates visualizations from imported data
+
+**UC ID and Name:** `UC-FEAT-create-visuals`: Create visualizations from imported data
+**Created By:** Tanner Temple
+**Date Created:** 2026-09-25
+**Primary Actor:** User
+**Secondary Actors:** none
+**Trigger:** The user indicates to create visualizations after importing data.
+**Description:** After the user imports data and it has been decompiled, cleaned, and staged, the user creates visualizations from it in the desktop app. The system runs scripts that produce a visualization tab for each metric, each backed by and linked to the stored data.
+
+**Preconditions:**
+
+- PRE-1. The desktop app is running.
+- PRE-2. The imported data has been decompiled and cleaned and is staged for visualization.
+
+**Postconditions:**
+
+- POST-1. Visualizations are displayed on separate tabs, one per metric.
+- POST-2. Each visualization links to the stored data behind it, and the user can drill down to view that data.
+- POST-3. The visualizations are staged for export.
+
+**Main Success Scenario:**
+
+1. The user indicates to create visualizations.
+2. The system confirms the data is cleaned and staged.
+3. The system asks the user to choose specific visualization types or all available visualizations.
+4. The user selects one or more visualization types, or all, and confirms.
+5. The system runs the visualization scripts against the staged data.
+6. The system displays each visualization on its own tab, linked to its underlying data.
+7. The system stages the visualizations for export.
+8. Use case ends.
+
+**Extensions:**
+
+- **2a. Data is not clean (for example, null values or missing columns):**
+    - 2a1. The system alerts the user that visualizations cannot be created until the data is cleaned.
+    - 2a2. The user either chooses `UC-FEAT-clean-data`: Clean decompiled data, or terminates the use case.
+- **4a. The user cancels the selection:**
+    - 4a1. The system creates no visualizations and the use case ends.
+- **5a. One or more visualization scripts fail:**
+    - 5a1. The system logs the failed visualizations and continues creating the rest.
+    - 5a2. The system notifies the user which visualizations could not be created.
+    - 5a3. The flow rejoins at step 6.
+- **6a. The user drills down into a visualization:**
+    - 6a1. The user selects a visualization or data point.
+    - 6a2. The system displays the underlying stored records.
+    - 6a3. The flow returns to step 6.
+
+**Priority:** Very High
+**Frequency of Use:** Most frequent. Along with decompressing and cleaning data, this is the most important feature.
+**Business Rules:** none
+
+**Associated Information:**
+
+| Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
+|---|---|---|---|---|
+| visualization type | Enumeration | Optional; one or more of the available types; defaults to all | none; local desktop app | Visualization |
+
+Display strategy: one tab per metric, each with a link to its underlying data.
+
+Failure handling: creating visualizations does not change stored data. If execution fails, the staged data is left unchanged and only the visualizations that completed are shown.
+
+**Related Use Cases:** `UC-FEAT-decompile-files`: Decompile files; `UC-FEAT-clean-data`: Clean decompiled data.
+**Assumptions:** The client (Malachi) wants visualizations built only from clean data.
+**Open Issues:**
+
+- Which metrics and visualization types are required.
+- Which export format(s) the staged visualizations should support.
+- Whether the user chooses visualization types or always receives all of them.
+
+---
+
+### UC-FEAT-clean-data: The system cleans decompiled data for visualization
+
+**UC ID and Name:** `UC-FEAT-clean-data`: Clean decompiled data
+**Created By:** Tanner Temple
+**Date Created:** 2026-09-25
+**Primary Actor:** User
+**Secondary Actors:** none
+**Trigger:** The system finishes decompiling the data (`UC-FEAT-decompile-files`).
+**Description:** After the user's bulk data file is decompiled, the system cleans it with a script so it is staged for creating visualizations. Cleaning only standardizes and formats; it never adds to or alters the underlying record values.
+
+**Preconditions:**
+
+- PRE-1. The USPTO office action data has been decompiled and stored.
+
+**Postconditions:**
+
+- POST-1. The data is cleaned and staged for visualization.
+- POST-2. The original decompiled data values are unchanged apart from the defined cleaning operations.
+
+**Main Success Scenario:**
+
+1. The system confirms the decompiled data is present.
+2. The system runs the cleaning script: it standardizes column names, removes null values, and formats fields for visualization, without adding or altering record values.
+3. The system validates that the cleaned data contains the columns required for visualization.
+4. The system stages the cleaned data and notifies the user that it is ready for visualizations.
+5. Use case ends.
+
+**Extensions:**
+
+- **1a. Decompiled data is missing or empty:**
+    - 1a1. The system alerts the user that there is no data to clean.
+    - 1a2. The user either chooses `UC-FEAT-decompile-files`: Decompile files, or terminates the use case.
+- **2a. The cleaning script fails:**
+    - 2a1. The system discards the partial result, keeping the decompiled data unchanged.
+    - 2a2. The system alerts the user that cleaning failed, and the use case ends.
+- **3a. Required columns are missing after cleaning:**
+    - 3a1. The system alerts the user and lists the missing columns.
+    - 3a2. The system does not stage the data, and the use case ends.
+
+**Priority:** High
+**Frequency of Use:** Frequent; every time data is uploaded.
+**Business Rules:** `BR-no-data-alteration`
+
+**Associated Information:**
+
+Cleaning operations: standardize column names, remove null values, format fields for visualization. No other changes are permitted.
+
+Failure handling: cleaning runs on a working copy. If execution fails, the change is rolled back and the decompiled data is left as it was.
+
+**Related Use Cases:** `UC-FEAT-decompile-files`: Decompile files; `UC-FEAT-create-visuals`: Create visualizations from imported data.
+**Assumptions:** Cleaning runs automatically once decompiling completes; the user does not start it manually.
+**Open Issues:**
+
+- `BR-no-data-alteration` needs to be added to business-rules.md.
+- The column naming convention to standardize to.
+- Whether null handling removes whole records or only null values, and whether the user sees a count of what was removed.
 
 
 
