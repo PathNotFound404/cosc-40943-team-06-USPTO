@@ -98,7 +98,7 @@ Office action data in USPTO Data consists of official written notifications and 
 **What is an Office Action**
 - Official Decision: A formal letter explaining an examiner's decision on whether an application meets legal standards for patentability or trademark registration
 - Rejections and Requirements: It details claim rejections, legal refusals, or corrections needed (such as clarifying goods or citing prior art)
--Interactive Process: It prompts the applicant to file a formal, timed response or amendment to continue prosecution.
+- Interactive Process: It prompts the applicant to file a formal, timed response or amendment to continue prosecution.
 
 **What the USPTO Data Includes**
 - Office Action Research Datasets: Structured files containing traits, rejections, and metadata extracted from millions of historical office actions using natural language processing.
