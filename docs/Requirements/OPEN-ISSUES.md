@@ -1,7 +1,7 @@
 # Open Issues
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
+**Project:** USPTO Patent Intelllignece
+**Team:** 06
 
 ---
 
