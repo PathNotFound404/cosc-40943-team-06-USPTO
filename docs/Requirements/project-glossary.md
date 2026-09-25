@@ -1,8 +1,8 @@
 # Project Glossary
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
+**Project:** USPTO Patent Intelligence 
+**Team:** 06
+**Client:** Malachi Hernandez 
 **Version:** 0.1
 
 ---
@@ -50,13 +50,13 @@ _Rules:_
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial terms from the client brief and first client meeting | _[Name]_ |
+| _[2026-09-24]_ | 0.1 | Initial terms from the client brief and first client meeting | Cody Pinkston |
 
 ---
 
 ## Definitions
 
-_[One `###` heading per term, alphabetical. Follow the heading with a definition of one to three sentences. Add **Synonyms**, **Not to be confused with**, or **Source** lines where they help. Where a term only makes sense with an example, give one._
+_[One `###` heading per term, alphabetical. Follow the heading with a definition of one to three sentences. Add **Synonyms**, **Not to be confused with**, or **Source** lines where they help. Where a term only makes sense with an example, give one.]_
 
 _Worked examples of the format:_
 
@@ -81,3 +81,39 @@ _**Synonyms:** WAR, used conversationally by the client and in the existing spre
 _**Source:** the client's existing Google Sheets process, described in [vision-and-scope.md](vision-and-scope.md) section 1.2._
 
 _[End of worked examples. Delete them and write your own terms below.]_
+
+
+### Art Unit 
+
+A specialized group of patent examiners within the U.S. Patent and Trademark Office. These units are organized by specific fields of technology, allowing examiners to develop expertise in particular areas. Each art unit is led by a senior patent examiner
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
+
+### Office Action Data
+
+Office action data in USPTO Data consists of official written notifications and text-based records issued by patent and trademark examiners to applicants during the examination process
+
+**What is an Office Action**
+- Official Decision: A formal letter explaining an examiner's decision on whether an application meets legal standards for patentability or trademark registration
+- Rejections and Requirements: It details claim rejections, legal refusals, or corrections needed (such as clarifying goods or citing prior art)
+-Interactive Process: It prompts the applicant to file a formal, timed response or amendment to continue prosecution.
+
+**What the USPTO Data Includes**
+- Office Action Research Datasets: Structured files containing traits, rejections, and metadata extracted from millions of historical office actions using natural language processing.
+- Text Retrieval APIs: Tools via the USPTO Open Data Portal that allow researchers and developers to search, query, and retrieve document-level data and text versions of office actions and rejections.
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
+
+### Grant 
+
+Means a patent application has successfully met all legal requirements and has been officially awarded as an enforceable patent.
+
+ Unlike a published patent application, a granted patent gives the owner the legal right to stop others from making, using, selling, or importing the invention in the U.S
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
