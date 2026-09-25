@@ -1,8 +1,8 @@
 # Project Glossary
 
-**Project:** _[Your project name]_
-**Team:** _[Team NN]_
-**Client:** _[Client name and organization]_
+**Project:** USPTO Patent Intelligence 
+**Team:** 06
+**Client:** Malachi Hernandez 
 **Version:** 0.1
 
 ---
@@ -50,13 +50,13 @@ _Rules:_
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial terms from the client brief and first client meeting | _[Name]_ |
+| _[2026-09-24]_ | 0.1 | Initial terms from the client brief and first client meeting | Cody Pinkston |
 
 ---
 
 ## Definitions
 
-_[One `###` heading per term, alphabetical. Follow the heading with a definition of one to three sentences. Add **Synonyms**, **Not to be confused with**, or **Source** lines where they help. Where a term only makes sense with an example, give one._
+_[One `###` heading per term, alphabetical. Follow the heading with a definition of one to three sentences. Add **Synonyms**, **Not to be confused with**, or **Source** lines where they help. Where a term only makes sense with an example, give one.]_
 
 _Worked examples of the format:_
 
@@ -81,3 +81,14 @@ _**Synonyms:** WAR, used conversationally by the client and in the existing spre
 _**Source:** the client's existing Google Sheets process, described in [vision-and-scope.md](vision-and-scope.md) section 1.2._
 
 _[End of worked examples. Delete them and write your own terms below.]_
+
+
+### Art Unit 
+
+A specialized group of patent examiners within the U.S. Patent and Trademark Office. These units are organized by specific fields of technology, allowing examiners to develop expertise in particular areas. Each art unit is led by a senior patent examiner
+
+**Synonyms:** N/A
+
+**Source:** USPTO Site 
+
+### Office Action Data  
