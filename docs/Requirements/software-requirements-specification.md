@@ -38,13 +38,13 @@ _Requirements cited from elsewhere keep their own identifiers: `UC-*` from [use-
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial draft | _[Name]_ |
+| _[2027-09-24]_ | 1.1 | Initial draft | _[Edwin Rodriguez]_ |
 
 ---
 
 ## 1. Introduction
 
-### 1.1 The purpose of _[project name]_
+### 1.1 The purpose of USPTO Patent Intelligence
 
 _[What the system is for: who wants it, why, and who will use it. Even though the vision and scope answers this, restate it in a paragraph here, because people read this document without having read that one.]_
 
