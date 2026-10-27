@@ -2,8 +2,8 @@
 
 **Project:** USPTO Patent Intelligence
 **Team:** 6
-**Client:** USPTO
-**Version:** 1.1
+**Client:** Malachi Hernandez
+**Version:** 1.2
 
 ---
 
@@ -27,10 +27,10 @@ _Identifiers here are **name-based slugs**, never numbers._
 
 | Space | Example | Example | Example |
 |---|---|---| --- |
-| Business objective | `BO-Post-Visuals` | x | x |
-| Success metric | `SM-Accuracy>` | x | x |
-| Risk | `RI-Storage-Cost`| x | x |
-| Assumption or dependency | `AS-local` | `AS-client-maintains-stack` | x |
+| Business objective | `BO-Post-Visuals` | `BO-Weekly-Series` | `BO-Zero-Cost` |
+| Success metric | `SM-Accuracy` | `SM-Prep-Time` | `SM-Complete-Intake` |
+| Risk | `RI-Storage-Cost`| `RI-Unsupported-Claims` | `RI-Format-Drift` |
+| Assumption or dependency | `AS-local` | `AS-client-maintains-stack` | `AS-weekly-file-format` |
 | Feature | `FEAT-Verify-Source` | `FEAT-Intake-Data` | `FEAT-Generate-Visualization` |
 
 _Coin each slug from the concept itself: short, kebab-case, unique within its space. **Never renumber, rename, or repoint an identifier.** A new item gets a new slug; a retired item keeps its slug and is marked withdrawn. Cite items by identifier, never by position in a list ("the third objective")._
@@ -44,6 +44,7 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 | 2026-09-13 | 0.1 | Initial draft from the client brief | Turner DeMott |
 | 2026-09-20 | 1.0 | First draft post-meeting with Malachi | Turner DeMott |
 | 2026-09-21 | 1.1 | First team draft | Team |
+| 2026-10-27 | 1.2 | Filled remaining sections from the gap report; added figures from the 2026-10-18 sample weekly file | Turner DeMott |
 
 
 ---
@@ -58,9 +59,11 @@ This document states why USPTO Patent Intelligence is being built, who it is for
 
 _[Summarize the rationale and context for the new product, or for the changes to an existing one. Describe the situation that led to the decision to build it.]_
 
+Malachi Hernandez is an entrepreneur working in intellectual property (IP) and AI. He co-owns a three-year-old IP/AI company with a friend; its products have matured and the company is currently up for sale. He also helps small businesses adopt AI, travels with the US Department of State as part of a speakers program on 6G and IP, and has sponsored senior projects at TCU and Texas A&M for the past three years. IP is the area he is most passionate about.
+
 This project is personal, separate from Malachi's companies. Regardless of whether his business sells, he wants to stay connected to the patent space by publishing data-driven IP content (primarily LinkedIn, occasionally Instagram) analyzing USPTO examination activity. He is the only intended user of the tool. He will use its output for his posts and reports, which should reach an audience that includes USPTO, Congress, and US Department of State readers.
 
-.
+The subject of those posts is the United States Patent and Trademark Office (USPTO), the federal agency that examines patent applications. Its examiners are grouped into [Technology Centers](project-glossary.md#technology-center) and [Art Units](project-glossary.md#art-unit), and each time an examiner finds a problem with an application they issue an [Office Action](project-glossary.md#office-action). The USPTO publishes these office actions as public [bulk data](project-glossary.md#weekly-release). One week of that data is substantial: the sample file Malachi provided (`bdr_oa_bulkdata_weekly_2026-10-18.json`) holds 8,667 office actions submitted between 13 and 16 October 2026, issued by 4,882 examiners in 524 art units across 10 Technology Centers. Malachi's goal is not to comment on individual patents but to show, week by week, how well the agency is functioning.
 
 _**Step 1: Describe the business.** Introduce the organization. Cover what it does (industry, products, services), its size (employees, locations), and the goals that relate to the problem you are solving._
 
@@ -72,7 +75,50 @@ _**Checklist:** Would a reader who has never heard of this organization understa
 
 _[Most projects require everyone involved to have a firm grasp of the business process being created, replicated, or improved. Without that understanding there is little chance users adopt the new solution. Process flows are the most effective model for building it.]_
 
-There is no current process flow. We are creating a proof of concept that does not exist yet.
+No tool for this exists today, and Malachi does not yet publish these posts regularly. The flow below is the manual process he followed in his dry runs, as described in the first client interview (2026-09-17). It will be checked against the process video he said he would send.
+
+```mermaid
+flowchart TD
+  subgraph USPTO[USPTO Open Data Portal]
+    U1[Publish weekly office action file] --> U2[Publish grant and litigation files separately]
+  end
+  subgraph Malachi
+    M1[Download the week's files] --> M2[Unpack and open the raw records]
+    M2 --> M3[Clean the data by hand]
+    M3 --> M4{Need grant or litigation context?}
+    M4 -- Yes --> M5[Match application, grant, and litigation numbers by hand]
+    M4 -- No --> M6[Count and group records]
+    M5 --> M6
+    M6 --> M7[Build charts by hand]
+    M7 --> M8{Can every number be traced back?}
+    M8 -- No --> M3
+    M8 -- Yes --> M9[Write the post]
+  end
+  subgraph Social[LinkedIn / Instagram]
+    S1[Post goes live]
+  end
+  U1 --> M1
+  U2 --> M5
+  M9 --> S1
+```
+
+Each week the USPTO releases a new office action file. Malachi downloads it, unpacks it, and has to clean it before it is usable, because the USPTO publishes it as a raw dump. If a post needs more than one week's examination activity, such as what happened to an application after it was granted, he has to find the same invention in the separately published grant and litigation files. Those files use different numbers, so he matches them by hand. He then counts and groups the records, builds the charts, checks that each number can be traced back to the source, and writes the post. Data preparation took him 4 to 6 hours in his dry runs, and writing took another 2 to 4, so one post costs about 8 hours.
+
+**Current tools and their limitations**
+
+| Tool | Used for | Limitation |
+|---|---|---|
+| USPTO Open Data Portal (bulk files and API) | Getting the data | Publishes raw, uncleaned files; office action, grant, and litigation data are separate silos. The API sometimes drops out for about 2 minutes. |
+| Spreadsheets | Counting and charting | One weekly file is 383 MB of text and mostly long office action letters, too much for a spreadsheet to handle comfortably. Malachi does not want to work in Excel. |
+| His company's existing tools | Part of the analysis | Narrowly scoped; they do not produce weekly, agency-level analysis. |
+| LinkedIn / Instagram | Publishing | No connection to the data; every chart and figure is copied in by hand. |
+
+**Pain points**
+
+- **Time.** About 8 hours per post (4–6 hours of data work, 2–4 hours of writing). At that cost a weekly series cannot be sustained alongside his other work.
+- **Messy, inconsistent data.** In the 2026-10-18 sample, every record is tagged with exactly one rejection type, yet 2,087 records contain §102 rejection text without a §102 tag. A chart counted from the tags alone would undercount §102 rejections by more than three times (833 tagged against 2,798 records with §102 text). Fields are also unevenly filled: only 2,701 of the 8,667 records have a national patent class.
+- **Siloed datasets.** Office action, grant, and litigation data identify the same invention by different numbers, so following one invention across them is manual work.
+- **Credibility.** Readers include USPTO, Congress, and State Department staff. A single figure that cannot be traced back to the data damages trust in the whole series.
 
 _**Step 1: Diagram the current process.** Draw the process people execute **today**, before your software exists, as a mermaid flowchart with **one subgraph per actor** (roles, departments, existing systems). Show the sequence of activities, the decision points, and the handoffs between actors._
 
@@ -111,7 +157,17 @@ _**Checklist:** Is the business context clear to someone unfamiliar with it? Doe
 
 _[List every document referenced elsewhere in this one: the client's project brief, existing forms and reports, regulations, standards, competing products. Identify each by title, date, and where it can be obtained. The spreadsheet or screenshot your client showed you belongs here.]_
 
---> Insert Client Brief
+| Reference | Date | Where to get it |
+|---|---|---|
+| Client project brief: *Local Patent Intelligence & USPTO Operations Analytics* (pitch slides) | Fall 2026 | TCU Online, course site |
+| Client interview notes, meeting #1 | 2026-09-17 | [client-interview-2026-09-13.md](client-interview-2026-09-13.md) |
+| Sample weekly office action file `bdr_oa_bulkdata_weekly_2026-10-18.json` (8,667 records, 383 MB) | 2026-10-18 | Provided by the client; kept in the repository's `example data/` folder, which is git-ignored |
+| USPTO Open Data Portal | Ongoing | https://data.uspto.gov |
+| Project glossary | Current | [project-glossary.md](project-glossary.md) |
+| Business rules | Current | [business-rules.md](business-rules.md) |
+| Software requirements specification | Current | [software-requirements-specification.md](software-requirements-specification.md) |
+| Client process video | Pending | Promised by the client; not yet received |
+
 ---
 
 ## 2. Business Requirements
@@ -128,7 +184,10 @@ Producing one post today would cost him roughly eight hours, because the underly
 
 _[Summarize the business benefits the product will provide, **quantitatively and measurably**. Platitudes ("become recognized as a world-class provider") and vague improvements ("provide a more rewarding customer experience") are neither helpful nor verifiable.]_
 
-- _`BO-Post-Visuals`: Take data, create visualizations, and export in a format that can be posted on LinkedIn.
+- `BO-Post-Visuals`: Reduce the data-preparation time for one post (from downloading a weekly release to having publish-ready charts) from 4–6 hours to under 1 hour, which cuts a full post from about 8 hours to under 5.
+- `BO-Weekly-Series`: Make it possible for Malachi to publish a data-backed post about USPTO examination activity every week. Baseline: no regular series exists today because each post costs about 8 hours.
+- `BO-Zero-Cost`: Keep the cost of running the tool at $0 per month: no hosting, subscription, or paid AI API fees. Baseline: $0 (no tool).
+- `BO-Credible-Content`: Publish no post that has to be corrected because of a figure the tool produced. Baseline: no posts published yet.
 
 _Examples:_
 
@@ -149,8 +208,15 @@ _A success metric is sometimes the same statement as a business objective, when 
 
 _For each metric give the indicator, where the number comes from, what it is today (the baseline), and what counts as success by when. A metric with no baseline is not measurable, and "we do not track that today" is a finding worth recording rather than a gap to paper over._
 
-- _`SM-Accuracy`: 100% accurate with data that backs up every visualization and trend when queried._
+| Metric | Indicator | Source | Baseline | Target and deadline | Traces to |
+|---|---|---|---|---|---|
+| `SM-Accuracy` | Share of figures in exported charts that match a manual recount from the source records | Team spot check: 20 figures from one real weekly release, recounted directly from the raw file | No tool exists; not measured | 100% (20 of 20) at the final demo, December 2026 | `BO-Credible-Content` |
+| `SM-Prep-Time` | Malachi's hands-on time from a new weekly file to exported charts, not counting unattended processing | Timed session with Malachi using a real weekly release | 4–6 hours (client interview, 2026-09-17) | Under 1 hour at the final demo, December 2026 (`USE-weekly-data-time`) | `BO-Post-Visuals`, `BO-Weekly-Series` |
+| `SM-Complete-Intake` | Records imported plus records rejected with a stated reason, as a share of records in the file | Import summary, checked against a line count of the file | Not measured; the 2026-10-18 sample has 8,667 records | 100%: no record is silently dropped, by the final demo, December 2026 | `BO-Credible-Content`, `BO-Post-Visuals` |
+| `SM-Traceable-Visuals` | Share of exported charts whose source records can be opened from the chart | Review of every chart exported during testing | No tool exists; not measured | 100% by the final demo, December 2026 (`FEAT-Verify-Source`) | `BO-Credible-Content` |
+| `SM-Running-Cost` | Monthly spend needed to run the tool | Malachi's statements for any service the tool uses | $0 | $0 in each of the first 3 months after hand-off | `BO-Zero-Cost` |
 
+`BO-Weekly-Series` can only be judged after hand-off, so `SM-Prep-Time` is its early indicator: if the hands-on time is under 1 hour, a weekly post is realistic. A factor outside the project's control is whether the USPTO keeps publishing the weekly file in its current form (`RI-Format-Drift`).
 
 _Examples:_
 
@@ -169,23 +235,12 @@ _[One statement summarizing, at the highest level, the position this product int
 
 | | |
 |---|---|
-| **For** | _[target customer]_ |
-| **Who** | _[the need or opportunity]_ |
-| **The** _[product name]_ | _[is a ...]_ |
-| **That** | _[major capabilities, key benefit, compelling reason to use it]_ |
-| **Unlike** | _[the current process, or the competing alternative]_ |
-| **Our product** | _[primary differentiation and advantage]_ |
-
-_Worked example:_
-
-| | |
-|---|---|
-| **For** | Malachi (client, entrepreneur) |
+| **For** | Malachi Hernandez, an entrepreneur who publishes IP content |
 | **Who** | needs credible, data-backed visuals and text about USPTO examination activity without spending a full workday producing each post |
-| **The** | USPTO Patent Intelligence App| is a local desktop application |
-| **That** | takes in weekly USPTO Office Action and litigation bulk data, links records across datasets, and produces verifiable, publish-ready charts and text, entirely offline |
-| **Unlike** | the current possible process of manually doing everything|
-| **Our product** | saves time and produces verifiable results without relying on cloud AI |
+| **The** USPTO Patent Intelligence app | is a local desktop application |
+| **That** | takes in weekly USPTO office action bulk data (and later grant and litigation data), cleans and links it, and produces publish-ready charts that trace every number back to its source records, entirely on his own computer |
+| **Unlike** | the manual process of downloading, cleaning, and charting raw USPTO files by hand, which takes about 8 hours per post |
+| **Our product** | cuts the data work to under an hour, makes no claim the data cannot support, and costs nothing to run because it uses no cloud AI |
 
 _**Use this in the meeting.** Read the filled-in table back to your client out loud and watch what they correct. It is the fastest way to discover you misunderstood the project, and it costs ninety seconds. Corrections go straight into [OPEN-ISSUES.md](OPEN-ISSUES.md)._
 
@@ -193,7 +248,51 @@ _**Use this in the meeting.** Read the filled-in table back to your client out l
 
 _[Draw the improved process, with your software in it, as a second mermaid flowchart in the same shape as the as-is flow. Show how the software interacts with each actor, which steps it automates, and which pain point from section 1.2 each change addresses. Label the steps that are new or significantly changed, and say plainly which manual steps **remain** and why. There may be several major flows.]_
 
---> This will come after the data is sent to us and the process is outlined by Malachi (21 September 2026)
+Steps marked **(new)** are done by the application instead of by hand. This flow is based on the interview and the 2026-10-18 sample file; it will be revised once the client's process video arrives.
+
+```mermaid
+flowchart TD
+  subgraph USPTO[USPTO Open Data Portal]
+    U1[Publish weekly office action file]
+  end
+  subgraph Malachi
+    M1[Download the week's file] --> M2[Drag the file into the app]
+    M6[Review the weekly overview and charts] --> M7{Need to check a number?}
+    M7 -- Yes --> M8[Open the source records behind the chart]
+    M8 --> M6
+    M7 -- No --> M9[Export charts]
+    M9 --> M10[Write the post]
+  end
+  subgraph App[USPTO Patent Intelligence]
+    A1["Unpack and read every record (new)"] --> A2["Clean and check the records; report any it rejects (new)"]
+    A2 --> A3["Link records to earlier weeks and other datasets (new)"]
+    A3 --> A4["Count, group, and chart by art unit, rejection type, and period (new)"]
+    A4 --> A5["Keep a link from each chart to its source records (new)"]
+  end
+  subgraph Social[LinkedIn / Instagram]
+    S1[Post goes live]
+  end
+  U1 --> M1
+  M2 --> A1
+  A5 --> M6
+  M10 --> S1
+```
+
+**How each change addresses a pain point from section 1.2**
+
+| Change | Pain point addressed |
+|---|---|
+| The app unpacks, cleans, and checks each weekly file, and reports any records it could not use | Messy, inconsistent data; time |
+| The app counts rejections from both the rejection tags and the rejection text, and says which one each chart uses | Messy, inconsistent data (the §102 undercount) |
+| The app links office actions to earlier weeks and, once available, to grant and litigation records | Siloed datasets |
+| Every chart keeps a link to the records it was built from | Credibility |
+| Processing runs unattended, for example overnight | Time |
+
+**Manual steps that remain, and why**
+
+- **Downloading the file.** The client prefers the bulk files to the API (`CO-bulk-data-first`), and the USPTO's API is unreliable. Automatic download can be added later.
+- **Reviewing and checking the charts.** The client wants a verification step before anything is published. The app makes it fast; it does not remove it.
+- **Writing the post and publishing it.** The post is in Malachi's voice, and the app has no connection to LinkedIn or Instagram by design (`CI-no-external-messages`).
 
 _The point of drawing both is the comparison. If the two diagrams look alike, either you have not understood the current process or the software is not worth building._
 
@@ -201,8 +300,15 @@ _The point of drawing both is the comparison. If the two diagrams look alike, ei
 
 _[Summarize the major business risks of building this product, and of not building it. Categories include competition, timing, user acceptance, implementation, and negative impact on the business. Business risks are not project risks: "a teammate might drop the course" is a project risk and does not belong here. Give probability and impact for each, and a mitigation where you have one.]_
 
-- _`Cost`: Cost must be 0 or close to it. No api costs, especially AI. Storage cost may be an issue as Malachi wants years of history stored to support Visualizations._
+Probability is from 0 to 1; impact is from 1 (minor) to 9 (severe).
 
+- `RI-Unsupported-Claims`: The local AI model can state a number or trend that is not in the data. If Malachi publishes it to readers at the USPTO, Congress, or the State Department, the error damages the credibility of the whole series. (Probability 0.5, Impact 9.) *Mitigation:* AI output must cite the records it is based on (`FEAT-Verify-Source`), and charts are calculated directly from the data, never by the AI model.
+- `RI-Inconsistent-Source-Fields`: The USPTO's own fields disagree with each other. In the 2026-10-18 sample, 2,087 records contain §102 rejection text but are not tagged as §102. A chart built from the tags alone would publish a figure that is wrong by more than three times. (Probability 0.7, Impact 7.) *Mitigation:* Agree with the client which field counts as the source of truth; label every chart with the field it was counted from.
+- `RI-Format-Drift`: The USPTO changes the layout or field names of its weekly file without notice, and the import either fails or silently drops values, corrupting every chart built afterward. (Probability 0.4, Impact 7.) *Mitigation:* Check each file against the expected fields and refuse files that do not match, rather than guessing (`ROB-format-change`).
+- `RI-Storage-Cost`: Malachi wants years of history kept to support trend charts. One week of office action data is 383 MB, about 20 GB per year before any grant or litigation data, and the client expects some downloads to be far larger (20–50 GB). Several years could fill his 2 TB drive or force a paid storage upgrade, which conflicts with `BO-Zero-Cost`. (Probability 0.3, Impact 5.) *Mitigation:* Store only the fields the charts need and compress the stored data; show how much space the data uses (`DI-storage-visibility`).
+- `RI-Local-AI-Too-Slow`: A model small enough to run on a MacBook Air with no separate graphics card may be too slow or too weak to be useful, so the AI features go unused. (Probability 0.4, Impact 4.) *Mitigation:* Make the AI assistant optional and keep the core charts independent of it (section 4.3).
+- `RI-Examiner-Identification`: The data identifies each examiner by employee number. Posts that rank or criticize individual examiners could expose real people to public criticism and harm Malachi's standing with USPTO readers. (Probability 0.3, Impact 6.) *Mitigation:* Report at the art unit and Technology Center level by default; ask the client for a rule (`DI-identifiable-people`).
+- `RI-No-Tool`: If the tool is not built, each post keeps costing about 8 hours, and Malachi is unlikely to sustain a weekly series alongside his other work. (Probability 0.8, Impact 6.)
 
 _Examples:_
 
@@ -216,8 +322,13 @@ _**State risks as mechanisms, not categories.** "Security risk" names a category
 
 _[An assumption is something you believe without proof, which would force this document to change if it turned out false. A dependency is something outside your control that the project relies on. Both live here under `AS-*`.]_
 
-- _`AS-local`: Client Malachi wants the whole process to run and store locally. Must be local for security and cost._
-
+- `AS-local`: Malachi wants the whole process to run and store data on his own computer, for security and cost. If he later accepts a hosted service, the architecture and cost objectives change.
+- `AS-client-maintains-stack`: Malachi maintains the application after the team graduates, and he does not write code. If this is false (for example, he hires a developer), the stack could be more complex; if it is true and the stack needs regular coding, the tool will stop working after hand-off.
+- `AS-weekly-file-format`: The weekly office action file keeps the layout of the 2026-10-18 sample: one JSON record per line, one record per office action, with fields such as application number, art unit, Technology Center, document code, filing and submission dates, and rejections. The client brief describes ZIP and XML files; if other weeks arrive in that form, the intake design changes.
+- `AS-office-action-data-sufficient`: The weekly overview Malachi wants can be produced from office action data alone. If every post needs grant or litigation data, `FEAT-Link-Datasets` moves into the MVP and the schedule is at risk.
+- `AS-public-data`: The data is public (every record in the sample is marked `PUBLIC`), so Malachi may publish figures derived from it without permission.
+- `AS-client-hardware`: Malachi keeps his current computer (2022 MacBook Air, 24 GB memory, 2 TB SSD, no separate graphics card) for the life of the project. A smaller machine would rule out local AI; a Windows machine would make cross-platform support necessary.
+- `AS-client-availability`: Malachi stays available for a weekly meeting and answers email within 24 hours, as agreed in the first interview. Open questions (pendency formula, source of truth for rejections) depend on him.
 
 _Examples:_
 
@@ -239,11 +350,12 @@ _A stakeholder is not always a user. The person paying for the software, the per
 
 | Stakeholder | Major value or benefit from this product | Attitude | Major features of interest | Constraints | End user? |
 |---|---|---|---|---|---|
-| _[Role]_ | _[What they get out of it]_ | _[Supportive, skeptical, unaware, opposed]_ | _[What they care about]_ | _[What limits them]_ | _[Yes or no]_ |
+| Malachi Hernandez (client, sole user, future maintainer) | Can efficiently produce content for posts | Supportive, driving the project | Traceable, verifiable claims; low or zero AI cost; clean visuals; possibly historical data too | Non-technical on the execution side; MacBook Air, 24 GB RAM, no separate graphics card; busy, but very committed | Yes |
+| Post readers (including USPTO, Congress, and US Department of State staff) | Reliable, data-backed insight into how the USPTO is performing | Unaware of the tool; skeptical of any claim they cannot check | The accuracy and labeling of exported charts | Never use the application; see only what Malachi publishes | No |
+| USPTO (data publisher, and subject of the posts) | Public scrutiny of its examination performance | Unaware | Fair, accurate representation of its data | Controls the data format and can change it without notice | No |
+| Patent examiners (identified in the data by employee number) | None directly; they may be affected by what is published | Unaware | How individual performance is shown, if at all | No say in the project | No |
 
 _**Attitude is the column students leave blank, and the one that predicts trouble.** A stakeholder whose workload increases because of your software is not automatically supportive, and finding that out in December is too late._
-
-| Malachi (client) |	Can efficiently produce content for posts | Supportive, driving the project |	Traceable/verifiable claims, low/zero AI cost, clean visuals, maybe historical pull too |	Non-technical on execution side; MacBook Air, 24GB RAM, no discrete GPU, busy (but still very committed) | Yes |
 
 ### 3.2 User Environment
 
@@ -257,7 +369,7 @@ _[Describe the working environment of the target users:_
 
 Malachi, working in a weekly cycle: download the week's release, process/visualize, write, publish. No mobile, outdoor, or connectivity constraints. This is just desktop work. Current platform: a 2022 MacBook Air, 24GB RAM, 2TB SSD, no discrete GPU. He will possibly upgrade his laptop at some point. He'd be open to Windows eventually but does not need it now. No integration with other applications is required.
 
-
+One week's office action file is roughly 8,700 records and 383 MB (2026-10-18 sample), most of it the full text of each office action letter.
 
 ### 3.3 Alternatives and Competition
 
@@ -265,13 +377,11 @@ _[Identify the alternatives your stakeholders see as available: buying a competi
 
 | Alternative | Strengths | Weaknesses for this client |
 |---|---|---|
-| _[Tool, or "the current manual process"]_ | | |
+| Current manual process (Malachi does it himself) | Results would likely be acceptable; no new software | Very time-consuming (about 8 hours per post), and results may not equal our final product |
+| His company's existing tools | Already tackle part of the job | Do not do what he is looking for; scope too narrow |
+| Cloud AI services (for example, a paid chatbot over the data) | Little to build | Recurring cost, data leaves his computer, and answers can be made up; he ruled these out (`CO-no-paid-ai-services`) |
 
 _Always include the status quo as a row. It is the alternative that wins most often, and the one your product actually has to beat._
-
-| Current process (if Malachi was to do it on his own) | results would likely be acceptable | would be very time consuming, and results may not equal our final product |
-
-| Current company tools | tackles part of the job already | does not do what he is looking for, scope too narrow|
 
 
 ## 4. Scope and Limitations
@@ -284,15 +394,18 @@ Self-contained, single-user desktop app. Data flows in one direction from USPTO'
 
 _[Put the product in context relative to other systems and the user's environment. If it is independent and self-contained, say so. If it is one component of something larger, describe how they interact and identify the interfaces between them. A context diagram shows this most clearly: your system as one box, every external actor and system around it, and a labeled arrow for each thing that crosses the boundary.]_
 
-_This product will live alone outside any company or other products. Self contained._
+The product is independent and self-contained. It is not part of the USPTO's systems or of Malachi's companies. Data enters only from USPTO files Malachi downloads (or, optionally, the USPTO API); charts and text leave only when Malachi exports them and copies them into a post himself. The AI model runs on the same computer, so nothing about the data leaves it.
 
-    ```mermaid
-    flowchart LR
-      Student[Student] --> PP[Project Pulse]
-      Instructor[Instructor] --> PP
-      PP --> Gmail[(Gmail)]
-      PP --> LMS[(Learning management system)]
-    ```
+```mermaid
+flowchart LR
+  Malachi[Malachi] -- drags in weekly files, asks questions --> App[USPTO Patent Intelligence]
+  App -- charts, overviews, source records --> Malachi
+  ODP[(USPTO Open Data Portal)] -- weekly office action file, downloaded by Malachi --> App
+  ODP -. optional: API records .-> App
+  App -- prompts --> LLM[Local AI model on the same computer]
+  LLM -- text answers --> App
+  Malachi -- copies exported charts and text --> Social[(LinkedIn / Instagram)]
+```
 
 ### 4.2 Major Features and Scope
 
@@ -300,13 +413,16 @@ _[List and briefly describe the major product features. A feature is a high-leve
 
 _Because this document is read by a wide range of people, keep the detail general enough for everyone to follow while giving your team enough to build a use-case model from. **Use cases are derived from these features**, so a feature too vague to decompose is too vague._
 
-| Feature | `FEAT-Verify-Source` | `FEAT-Upload-Zip` | `FEAT-Generate-Visualization` |
-
-- _`FEAT-Verify-Source`: Display where the data is stored that created any such visualization._
-- _`FEAT-Intake-Data`: Easy drag and drop data to app to create visualizations._
-- _`FEAT-Generate-Visualization`: Take any data input and automatically create trends, visuals, and output analyzation._
-
-
+| Feature | Description | Objectives served |
+|---|---|---|
+| `FEAT-Intake-Data` | Easy drag-and-drop import of USPTO weekly files. The application unpacks, cleans, and checks the records, and reports any it cannot use. | `BO-Post-Visuals`, `BO-Credible-Content` |
+| `FEAT-Generate-Visualization` | Turn imported data into trends, charts, and overviews (for example, rejections by type, art unit, and period) and export them in a form that can be posted on LinkedIn. | `BO-Post-Visuals`, `BO-Weekly-Series` |
+| `FEAT-Verify-Source` | Show the records and files behind any chart or figure, so every claim can be checked before it is published. | `BO-Credible-Content` |
+| `FEAT-Query-AI` | Ask a local AI assistant questions about the imported data in plain English; every answer cites the records it is based on. | `BO-Post-Visuals` |
+| `FEAT-Link-Datasets` | Follow one invention across office action, grant, and litigation data, including its patent family. | `BO-Credible-Content` |
+| `FEAT-Detect-Anomalies` | Point out art units or periods whose numbers are unusual compared with their own history, as prompts for a closer look. | `BO-Weekly-Series` |
+| `FEAT-Historical-Overview` | Monthly and yearly overviews built from many weekly files. | `BO-Weekly-Series` |
+| `FEAT-International-Data` | Import and analyze patent data from other offices, such as the European and Chinese patent offices, kept separate from USPTO data. | None yet (future) |
 
 _Guidelines:_
 
@@ -327,13 +443,18 @@ _Examples:_
 
 _[Of the features above, which ones ship in the release you actually deliver in December? Name them by identifier. Then name what is explicitly **out**, also by identifier, so it is on the record.]_
 
-_**In scope for the MVP:** `FEAT-Intake-Data`, `FEAT-Generate-Visualization`, `FEAT-Verify-Source`_
+**In scope for the MVP:** `FEAT-Intake-Data`, `FEAT-Generate-Visualization`, `FEAT-Verify-Source`
 
+**Stretch, only if the MVP features are complete:** `FEAT-Query-AI` (the client wants AI analysis, but only if it never makes claims the data cannot support; a model that runs well on his hardware is not yet proven, `RI-Local-AI-Too-Slow`)
 
+**Explicitly out of scope:**
 
-_**In scope for the MVP:** `FEAT-...`, `FEAT-...`_
-
-_**Explicitly out of scope:** `FEAT-...` (reason), `FEAT-...` (reason)_
+- `FEAT-Link-Datasets` (no grant or litigation sample data received yet; whether it belongs in release 1.0 is open, `AS-release-scope` in the SRS)
+- `FEAT-Detect-Anomalies` (there is no labeled data to prove an "unusual" flag is right, so it risks publishing claims the data cannot support)
+- `FEAT-Historical-Overview` (the client called monthly and yearly overviews "nice but not necessary at this moment")
+- `FEAT-International-Data` (the client plans to look at European and Chinese data in spring 2027)
+- Windows support (the client uses one MacBook and does not need Windows now)
+- Posting directly to LinkedIn or Instagram (by design; Malachi copies exports himself)
 
 _Ask your client the question directly: "If we can deliver only one of these in December, which one is it?" The answer is worth more than the rest of the meeting. A client who cannot choose has not thought about it yet, which is itself something you need to know now rather than in November._
 
