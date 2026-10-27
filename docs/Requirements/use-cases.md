@@ -1,9 +1,9 @@
 # Use Cases
 
-**Project:** USPTO Patent Intelligence _
+**Project:** USPTO Patent Intelligence
 **Team:** Group 6, Bradley, Koen, Cody, Edwin, Tanner, Turner
 **Client:** Malachi
-**Version:** 1.0
+**Version:** 1.1
 
 ---
 
@@ -30,7 +30,9 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 | Date | Version | Description | Author |
 |---|---|---|---|
 | _[YYYY-MM-DD]_ | 0.1 | Initial use cases derived from the vision and scope feature list | _[Name]_ |
-| _[2026-09-25]_ | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
+| 2026-09-25 | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
+| 2026-10-26 | 1.1 | Filled introduction and use case list; removed worked example; added `UC-FEAT-verify-source` and `UC-FEAT-export-visuals`; completed Associated Information and fixed extension numbering | Tanner |
+
 ---
 
 ## 1. Introduction
@@ -39,9 +41,19 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 
 _[One paragraph: this document specifies the goals users can accomplish with the system, in enough detail that a developer knows what to build and a tester knows what to check.]_
 
+This document specifies the goals the client can accomplish with USPTO Patent Intelligence: importing weekly USPTO office action bulk data, cleaning it, turning it into visualizations, tracing any visualization back to its source data, exporting visualizations for posts, and asking a local AI questions answered only from the processed data. Each use case is written in enough detail that a developer knows what to build and a tester knows what to check.
+
 ### 1.2 Scope
 
 _[Which feature areas from the vision and scope are covered here. Name the `FEAT-*` entries. If a feature has no use cases yet, say so rather than leaving the reader to notice.]_
+
+This document covers the three MVP features in [vision-and-scope.md](vision-and-scope.md) section 4.3:
+
+- `FEAT-Intake-Data`: `UC-FEAT-decompile-files`, `UC-FEAT-clean-data`.
+- `FEAT-Generate-Visualization`: `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals`.
+- `FEAT-Verify-Source`: `UC-FEAT-verify-source`.
+
+`UC-FEAT-query-ai` covers the local AI assistant, which is not yet listed as a `FEAT-*` entry in the vision and scope.
 
 ---
 
@@ -100,68 +112,18 @@ _[Your area codes, then a table of every use case by area. Write this list first
 
 | Area code | Feature area | Use cases |
 |---|---|---|
-| _[RUB]_ | _[Rubric, from `FEAT-...`]_ | _[`UC-RUB-...`]_ |
+| FEAT | Data intake, from `FEAT-Intake-Data` | `UC-FEAT-decompile-files`, `UC-FEAT-clean-data` |
+| FEAT | Visualization, from `FEAT-Generate-Visualization` | `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals` |
+| FEAT | Source verification, from `FEAT-Verify-Source` | `UC-FEAT-verify-source` |
+| FEAT | Local AI assistant (no `FEAT-*` entry yet) | `UC-FEAT-query-ai` |
+
+All current use cases share the area code `FEAT`. The identifiers were already in use, and identifiers are never renamed.
 
 ---
 
 ## 4. Use Cases
 
 _[One `###` heading per use case, grouped under a `##` heading per area. Worked example below, taken from Project Pulse. Delete it and write your own.]_
-
-### UC-RUB-find-criteria: The course admin finds criteria
-
-**UC ID and Name:** `UC-RUB-find-criteria`: Find criteria
-**Created By:** _[Name]_
-**Date Created:** _[YYYY-MM-DD]_
-**Primary Actor:** course admin
-**Secondary Actors:** none
-**Trigger:** The course admin indicates to find criteria.
-**Description:** The course admin wants to find the peer evaluation criteria defined in her course so that she can review, edit, delete, or add one to a rubric.
-
-**Preconditions:**
-
-- PRE-1. The course admin is logged into the system.
-
-**Postconditions:**
-
-- POST-1. A list of matching criteria in the course admin's course is returned and displayed. The list may be empty.
-
-**Main Success Scenario:**
-
-1. The course admin indicates to find criteria.
-2. The system asks the course admin to enter search values according to the "Search criteria" defined in the Associated Information of this use case.
-3. The course admin enters one or more search values and confirms that she has finished entering.
-4. The system finds all criteria in the course admin's course that match the provided search criteria.
-5. The system displays the matching criteria according to the "Search results display strategy" and the "Sort criteria" defined in the Associated Information of this use case.
-6. Use case ends.
-
-**Extensions:**
-
-- **4a. No matching criteria are found:**
-    - 4a1. The system alerts the course admin that no matching criteria are found.
-    - 4a2. The course admin either chooses `UC-RUB-create-criterion`: Create a criterion, or terminates the use case, or returns to step 2 of the normal flow.
-
-**Priority:** High
-**Frequency of Use:** Occasional; mostly at course setup and rubric revision.
-**Business Rules:** `BR-role-based-access`
-
-**Associated Information:**
-
-Search criteria:
-
-| Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
-|---|---|---|---|---|
-| criterion name | String | Optional | Course-scoped to the course admin's course | Criterion |
-
-Search results display strategy: criterion name, description, max score.
-
-Sort criteria: criterion name, ascending.
-
-**Related Use Cases:** `UC-RUB-create-criterion`: Create a criterion.
-**Assumptions:** none
-**Open Issues:** none
-
----
 
 ### UC-FEAT-decompile-files: Selected bulk files from USPTO office action data is decompiled
 
@@ -201,10 +163,10 @@ Sort criteria: criterion name, ascending.
     - 3a2. User selects different file, or terminates use case
 - 4a. Bulk file is corrupted or unreadable
     - 4a1. System alerts user that file could not be read
-    - 4a2. User selected different file, or terminates use case
+    - 4a2. User selects different file, or terminates use case
 - 5a. One or more records fail to convert to usable format
     - 5a1. System logs failed records count and continues processing remainder
-    - System notifies user of number of records that failed to convert
+    - 5a2. System notifies user of number of records that failed to convert
 
 **Priority: High**
 
@@ -218,13 +180,23 @@ Sort criteria: criterion name, ascending.
 
 **Associated Information:**
 
-**Related Use Cases:**
+| Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
+|---|---|---|---|---|
+| bulk data file | File | Required; must be a supported USPTO office action bulk format | none; local desktop app, single user | Office Action Data |
+
+Failure handling: decompiling writes to storage only after records are extracted. If execution fails part way, records already stored remain, and the source file and record count are kept with them (`DI-source-tracking`). Re-importing the same file does not create duplicates (`DI-no-duplicates`).
+
+Quality attributes: processing does not need to be fast and may run unattended (`AS-speed-not-critical`). Weekly files can be up to 20-50 GB.
+
+**Related Use Cases:** `UC-FEAT-clean-data`: Clean decompiled data.
 
 **Assumptions:** none
 
-**Open Issues:** none
+**Open Issues:**
 
------
+- Which exact bulk file formats are supported (ZIP containing XML, JSON, or other), pending the client's sample data (`DE-client-sample-data`).
+
+---
 
 ### UC-FEAT-query-ai: Ask local AI a question about processed data
 
@@ -256,16 +228,16 @@ Sort criteria: criterion name, ascending.
 4. System passes retrieved records to local AI model and grounding context
 5. System generates answer using only retrieved records
 6. System confirms that local AI model has information grounded in real context
-7. System displays answer along with citations to course material
+7. System displays answer along with citations to the source records used
 8. Use case ends
 
 **Extensions:**
-- 2a. No relevant records found
-    - 2a1. System informs user no data supports answer to given question and use case ends
-- 2b. AI model cannot understand the query user submitted
-    - 2b1. System informs user they cannot understand the query that has been submitted and use case ends
+- 2a. AI model cannot understand the query user submitted
+    - 2a1. System informs user it cannot understand the query that has been submitted and use case ends
+- 3a. No relevant records found
+    - 3a1. System informs user no data supports answer to given question and use case ends
 - 4a. AI model cannot produce answer strictly grounded in retrieved records
-    - 4a1. System informs user no verifiable answer can be generated based on the records along, instead of returning unsupported answer, and use case ends
+    - 4a1. System informs user no verifiable answer can be generated based on the records alone, instead of returning unsupported answer, and use case ends
 
 **Priority:** High
 **Frequency of Use:** Frequent; user may query many times on given datasets about many topics and analysis points
@@ -288,11 +260,21 @@ Sort criteria: criterion name, ascending.
 
 **Associated Information:**
 
-**Related Use Cases:** `UC-FEAT-decompile-files`
+| Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
+|---|---|---|---|---|
+| question | String | Required; natural language | none; runs locally, never sent off the computer (`CO-local-execution`) | none |
+
+Display strategy: the answer text, followed by a list of citations; each citation identifies the source record and its source file.
+
+Failure handling: querying does not change stored data. If the local model fails or times out, the system shows an error and no answer.
+
+**Related Use Cases:** `UC-FEAT-decompile-files`: Decompile files; `UC-FEAT-clean-data`: Clean decompiled data; `UC-FEAT-verify-source`: Verify the source of a visualization.
 
 **Assumptions:** AI model is running. Ability to interface with data
 
 **Open Issues:** none
+
+---
 
 ### UC-FEAT-create-visuals: The user creates visualizations from imported data
 
@@ -419,11 +401,134 @@ Failure handling: cleaning runs on a working copy. If execution fails, the chang
 **Assumptions:** Cleaning runs automatically once decompiling completes; the user does not start it manually.
 **Open Issues:**
 
-- `BR-no-data-alteration` needs to be added to business-rules.md.
 - The column naming convention to standardize to.
 - Whether null handling removes whole records or only null values, and whether the user sees a count of what was removed.
 
+---
 
+### UC-FEAT-verify-source: The user verifies the source data behind a visualization
+
+**UC ID and Name:** `UC-FEAT-verify-source`: Verify the source of a visualization
+**Created By:** Tanner Temple
+**Date Created:** 2026-10-26
+**Primary Actor:** User
+**Secondary Actors:** none
+**Trigger:** The user indicates to view the source of a visualization or data point.
+**Description:** The user wants to confirm where a visualization's numbers come from before using it in a post. The system shows the stored records behind the visualization and the USPTO file each record was imported from, giving the paper trail the client requires.
+
+**Preconditions:**
+
+- PRE-1. The desktop app is running.
+- PRE-2. At least one visualization has been created (`UC-FEAT-create-visuals`).
+
+**Postconditions:**
+
+- POST-1. The records behind the selected visualization or data point are displayed, each with its source file and import date.
+- POST-2. No stored data is changed.
+
+**Main Success Scenario:**
+
+1. The user selects a visualization or a data point within it and indicates to view its source.
+2. The system finds the stored records that produced the selection.
+3. The system displays the records according to the "Source display strategy" in the Associated Information of this use case.
+4. The user reviews the records.
+5. Use case ends.
+
+**Extensions:**
+
+- **2a. The underlying records no longer exist (for example, the dataset was deleted):**
+    - 2a1. The system alerts the user that the source data is unavailable and that the visualization should be recreated.
+    - 2a2. The user either chooses `UC-FEAT-create-visuals`: Create visualizations from imported data, or terminates the use case.
+- **2b. The selection is backed by more records than fit on one screen:**
+    - 2b1. The system displays the records in pages and shows the total count.
+    - 2b2. The flow rejoins at step 4.
+- **4a. The user selects a single record:**
+    - 4a1. The system displays all stored fields for that record and its source file.
+    - 4a2. The flow returns to step 4.
+
+**Priority:** Very High
+**Frequency of Use:** Frequent; every time the user checks a visualization before posting.
+**Business Rules:** `BR-evidence-based-analysis`, `BR-data-driven-insights`, `BR-no-data-alteration`
+
+**Associated Information:**
+
+Source display strategy: for each record, the record identifier (such as application number), the fields used in the visualization, the source file name, and the import date (`DI-source-tracking`).
+
+Sort criteria: source file, then record identifier, ascending.
+
+Failure handling: this use case only reads data. If execution fails, nothing is changed and the system shows an error.
+
+**Related Use Cases:** `UC-FEAT-create-visuals`: Create visualizations from imported data; `UC-FEAT-query-ai`: Ask AI assistant.
+**Assumptions:** none
+**Open Issues:** none
+
+---
+
+### UC-FEAT-export-visuals: The user exports visualizations for a post
+
+**UC ID and Name:** `UC-FEAT-export-visuals`: Export visualizations
+**Created By:** Tanner Temple
+**Date Created:** 2026-10-26
+**Primary Actor:** User
+**Secondary Actors:** none
+**Trigger:** The user indicates to export visualizations.
+**Description:** The user exports one or more staged visualizations so they can be copied into posts and the client's website. Each export is labeled so a reader who never uses the app can understand it.
+
+**Preconditions:**
+
+- PRE-1. The desktop app is running.
+- PRE-2. At least one visualization is staged for export (`UC-FEAT-create-visuals`).
+
+**Postconditions:**
+
+- POST-1. Each selected visualization is saved as a file in the chosen location.
+- POST-2. Each exported visualization shows its title, data source, date range, and generation date.
+
+**Main Success Scenario:**
+
+1. The user indicates to export visualizations.
+2. The system displays the staged visualizations.
+3. The user selects one or more visualizations and a save location, and confirms.
+4. The system validates that the save location is writable.
+5. The system writes each selected visualization to a file, labeled with its title, data source, date range, and generation date.
+6. The system confirms which files were saved and where.
+7. Use case ends.
+
+**Extensions:**
+
+- **3a. The user cancels:**
+    - 3a1. The system exports nothing and the use case ends.
+- **4a. The save location is not writable or does not have enough space:**
+    - 4a1. The system alerts the user and asks for a different location.
+    - 4a2. The flow returns to step 3.
+- **5a. One or more visualizations fail to export:**
+    - 5a1. The system continues exporting the rest.
+    - 5a2. The system lists which visualizations could not be exported.
+    - 5a3. The flow rejoins at step 6.
+- **5b. A file with the same name already exists:**
+    - 5b1. The system asks the user to overwrite it or keep both.
+    - 5b2. The flow continues at step 5.
+
+**Priority:** High
+**Frequency of Use:** Weekly; once or more per post.
+**Business Rules:** `BR-evidence-based-analysis`
+
+**Associated Information:**
+
+| Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
+|---|---|---|---|---|
+| visualizations | List | Required; one or more staged visualizations | none; local desktop app | Visualization |
+| save location | Folder path | Required; must be writable | none | none |
+
+Failure handling: exporting does not change stored data. Files already written stay in place if a later export fails.
+
+**Related Use Cases:** `UC-FEAT-create-visuals`: Create visualizations from imported data.
+**Assumptions:** none
+**Open Issues:**
+
+- Which export file format(s) are required.
+
+---
 
 ## Working these with your agent
 

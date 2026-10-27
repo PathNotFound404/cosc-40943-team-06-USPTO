@@ -83,7 +83,7 @@ _The Source column is the defense. Every rule traces to a document or a person, 
 | Date | Version | Description | Author |
 |---|---|---|---|
 | 2026-09-23 | 0.1 | Initial rules from the client brief and first client meeting | Koen |
-| 2026-09-23 | 0.1 | Initial rules from the client brief and first client meeting | Koen |
+| 2026-10-26 | 0.2 | Added `BR-no-data-alteration` | Tanner |
 
 ---
 
@@ -155,6 +155,8 @@ _Format each rule as a bold identifier, the rule in one sentence, then its sourc
 **Source:** Client examples of desired analyses, 2026-09-17.
 - **`BR-pendency-trend-metric`:** Patent pendency over time is a meaningful patent-analysis measure.
 **Source:** Client examples of desired analyses, 2026-09-17.
+- **`BR-no-data-alteration`:** Patent data may be reformatted for analysis, but its values must never be added to, guessed, or altered.
+**Source:** Client statement: "doesn't guess, makes concrete claims directly on the data," 2026-09-17.
  
 ### 2.6 Data Jurisdictions
 - **`BR-uspto-primary-source`:** USPTO data serves as the primary source of patent analysis.
@@ -208,6 +210,8 @@ _Format each rule as a bold identifier, the rule in one sentence, then its sourc
 **Source:** Client examples of desired analyses, 2026-09-17.
 - **`BR-pendency-trend-metric`:** Patent pendency over time is a meaningful patent-analysis measure.
 **Source:** Client examples of desired analyses, 2026-09-17.
+- **`BR-no-data-alteration`:** Patent data may be reformatted for analysis, but its values must never be added to, guessed, or altered.
+**Source:** Client statement: "doesn't guess, makes concrete claims directly on the data," 2026-09-17.
  
 ### 2.6 Data Jurisdictions
 - **`BR-uspto-primary-source`:** USPTO data serves as the primary source of patent analysis.

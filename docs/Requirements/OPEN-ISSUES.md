@@ -29,7 +29,12 @@ _[Send the shortlist to your client the day before. A client who has seen the qu
 
 | ID | Question | Why it matters | Who can answer | Raised |
 |---|---|---|---|---|
-| OI-1 | _[The question, phrased so it has a definite answer. Not "tell us about reporting" but "who is allowed to see another student's evaluation scores?"]_ | _[What we get wrong if we guess. Name the artifact or decision it blocks.]_ | _[Client, instructor, a specific user, or the team itself]_ | _[YYYY-MM-DD]_ |
+| OI-1 | Which metrics and visualization types are required in release 1.0? | Blocks the visualization scripts in `UC-FEAT-create-visuals`. | Client | 2026-09-25 |
+| OI-2 | Which export file format(s) must visualizations support (for example PNG, SVG, PDF, CSV)? | Blocks `UC-FEAT-export-visuals` and staging in `UC-FEAT-create-visuals`. | Client | 2026-09-25 |
+| OI-3 | Does the user choose visualization types, or always receive all of them? | Changes steps 3-4 of `UC-FEAT-create-visuals`. | Client | 2026-09-25 |
+| OI-4 | What column naming convention should cleaned data use? | Blocks the cleaning script in `UC-FEAT-clean-data`. | Team | 2026-09-25 |
+| OI-5 | Does null handling remove whole records or only null values, and does the user see a count of what was removed? | Changes results and counts in `UC-FEAT-clean-data`; risks `BR-no-data-alteration`. | Client | 2026-09-25 |
+| OI-6 | Which exact bulk file formats must be supported (ZIP of XML, JSON, other)? | Blocks validation in `UC-FEAT-decompile-files`. | Client sample data | 2026-10-26 |
 
 ## Resolved
 
