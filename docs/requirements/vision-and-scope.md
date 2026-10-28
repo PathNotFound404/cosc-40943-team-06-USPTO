@@ -3,7 +3,7 @@
 **Project:** USPTO Patent Intelligence
 **Team:** 6
 **Client:** Malachi Hernandez
-**Version:** 1.2
+**Version:** 1.3
 
 ---
 
@@ -45,6 +45,7 @@ _Why this matters more with an agent than it used to: ask an agent to insert a n
 | 2026-09-20 | 1.0 | First draft post-meeting with Malachi | Turner DeMott |
 | 2026-09-21 | 1.1 | First team draft | Team |
 | 2026-10-27 | 1.2 | Filled remaining sections from the gap report; added figures from the 2026-10-18 sample weekly file | Turner DeMott |
+| 2026-10-28 | 1.3 | Section 4.1 now links to the architecture context diagram instead of keeping its own; section 4.4 cites the deployment view | Cody Pinkston |
 
 
 ---
@@ -394,18 +395,9 @@ Self-contained, single-user desktop app. Data flows in one direction from USPTO'
 
 _[Put the product in context relative to other systems and the user's environment. If it is independent and self-contained, say so. If it is one component of something larger, describe how they interact and identify the interfaces between them. A context diagram shows this most clearly: your system as one box, every external actor and system around it, and a labeled arrow for each thing that crosses the boundary.]_
 
-The product is independent and self-contained. It is not part of the USPTO's systems or of Malachi's companies. Data enters only from USPTO files Malachi downloads (or, optionally, the USPTO API); charts and text leave only when Malachi exports them and copies them into a post himself. The AI model runs on the same computer, so nothing about the data leaves it.
+The product is independent and self-contained. It is not part of the USPTO's systems or of Malachi's companies. Data enters only from USPTO files Malachi downloads (or, optionally, the USPTO API); charts and text leave only when Malachi exports them and copies them into a post himself. Everything runs on his computer, so nothing about the data leaves it; when AI features are added in a later release, the model will run on the same computer too.
 
-```mermaid
-flowchart LR
-  Malachi[Malachi] -- drags in weekly files, asks questions --> App[USPTO Patent Intelligence]
-  App -- charts, overviews, source records --> Malachi
-  ODP[(USPTO Open Data Portal)] -- weekly office action file, downloaded by Malachi --> App
-  ODP -. optional: API records .-> App
-  App -- prompts --> LLM[Local AI model on the same computer]
-  LLM -- text answers --> App
-  Malachi -- copies exported charts and text --> Social[(LinkedIn / Instagram)]
-```
+The context diagram is kept in one place, section 3 of the [architecture-of-record](../design/architectural-design.md#3-context-and-scope), which also lists the interfaces that are not part of release 1.0.
 
 ### 4.2 Major Features and Scope
 
@@ -465,3 +457,5 @@ _[Summarize what it takes to get this into its operating environment. How will u
 _That last question shapes your architecture, so ask it in the first client meeting rather than the last._
 
 Runs entirely on Malachi's own machine. He installs and launches it himself. No training is really needed ideally. It should be straightforward for him to operate. He will maintain it after the team graduates. The stack should stay simple, there should be little need for updates, and maintenance should be very minimal. No hosting or subscription cost is acceptable.
+
+How the deployment meets this (installing the app, getting updates, and what survives a restart or update) is described in section 7 of the [architecture-of-record](../design/architectural-design.md#7-deployment-view).

@@ -3,7 +3,7 @@
 **Project:** USPTO Patent Intelligence
 **Team:** Group 6, Bradley, Koen, Cody, Edwin, Tanner, Turner
 **Client:** Malachi
-**Version:** 1.1
+**Version:** 1.2
 
 ---
 
@@ -29,9 +29,10 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[YYYY-MM-DD]_ | 0.1 | Initial use cases derived from the vision and scope feature list | _[Name]_ |
+| Not recorded | 0.1 | Initial use cases derived from the vision and scope feature list | Not recorded |
 | 2026-09-25 | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
 | 2026-10-26 | 1.1 | Filled introduction and use case list; removed worked example; added `UC-FEAT-verify-source` and `UC-FEAT-export-visuals`; completed Associated Information and fixed extension numbering | Tanner |
+| 2026-10-28 | 1.2 | Marked `UC-FEAT-query-ai` deferred and linked it to `FEAT-Query-AI`; added business rules to `UC-FEAT-create-visuals`; linked open issues; fixed glossary references and bracketed dates | Cody Pinkston |
 
 ---
 
@@ -41,7 +42,7 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 
 _[One paragraph: this document specifies the goals users can accomplish with the system, in enough detail that a developer knows what to build and a tester knows what to check.]_
 
-This document specifies the goals the client can accomplish with USPTO Patent Intelligence: importing weekly USPTO office action bulk data, cleaning it, turning it into visualizations, tracing any visualization back to its source data, exporting visualizations for posts, and asking a local AI questions answered only from the processed data. Each use case is written in enough detail that a developer knows what to build and a tester knows what to check.
+This document specifies the goals the client can accomplish with USPTO Patent Intelligence: importing weekly USPTO office action bulk data, cleaning it, turning it into visualizations, tracing any visualization back to its source data, and exporting visualizations for posts. It also specifies asking a local AI questions answered only from the processed data, which is deferred to a later release. Each use case is written in enough detail that a developer knows what to build and a tester knows what to check.
 
 ### 1.2 Scope
 
@@ -53,7 +54,9 @@ This document covers the three MVP features in [vision-and-scope.md](vision-and-
 - `FEAT-Generate-Visualization`: `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals`.
 - `FEAT-Verify-Source`: `UC-FEAT-verify-source`.
 
-`UC-FEAT-query-ai` covers the local AI assistant, which is not yet listed as a `FEAT-*` entry in the vision and scope.
+`FEAT-Query-AI` (a stretch feature in vision and scope 4.3): `UC-FEAT-query-ai`. It is **deferred**: release 1.0 has no AI features (architecture `KD-no-ai-in-mvp`), so it is specified but not built.
+
+The out-of-scope features `FEAT-Link-Datasets`, `FEAT-Detect-Anomalies`, `FEAT-Historical-Overview`, and `FEAT-International-Data` have no use cases yet.
 
 ---
 
@@ -115,7 +118,7 @@ _[Your area codes, then a table of every use case by area. Write this list first
 | FEAT | Data intake, from `FEAT-Intake-Data` | `UC-FEAT-decompile-files`, `UC-FEAT-clean-data` |
 | FEAT | Visualization, from `FEAT-Generate-Visualization` | `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals` |
 | FEAT | Source verification, from `FEAT-Verify-Source` | `UC-FEAT-verify-source` |
-| FEAT | Local AI assistant (no `FEAT-*` entry yet) | `UC-FEAT-query-ai` |
+| FEAT | Local AI assistant, from `FEAT-Query-AI` (deferred) | `UC-FEAT-query-ai` |
 
 All current use cases share the area code `FEAT`. The identifiers were already in use, and identifiers are never renamed.
 
@@ -131,7 +134,7 @@ _[One `###` heading per use case, grouped under a `##` heading per area. Worked 
 
 **Created By:** Bradley Helmholz
 
-**Date Created:** [2026-09-22]
+**Date Created:** 2026-09-22
 
 **Primary actor:** User
 
@@ -182,7 +185,7 @@ _[One `###` heading per use case, grouped under a `##` heading per area. Worked 
 
 | Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
 |---|---|---|---|---|
-| bulk data file | File | Required; must be a supported USPTO office action bulk format | none; local desktop app, single user | Office Action Data |
+| bulk data file | File | Required; must be a supported USPTO office action bulk format | none; local desktop app, single user | Office Action, Weekly Release |
 
 Failure handling: decompiling writes to storage only after records are extracted. If execution fails part way, records already stored remain, and the source file and record count are kept with them (`DI-source-tracking`). Re-importing the same file does not create duplicates (`DI-no-duplicates`).
 
@@ -194,17 +197,19 @@ Quality attributes: processing does not need to be fast and may run unattended (
 
 **Open Issues:**
 
-- Which exact bulk file formats are supported (ZIP containing XML, JSON, or other), pending the client's sample data (`DE-client-sample-data`).
+- Which exact bulk file formats are supported (ZIP containing XML, JSON, or other). One JSON-lines sample has been received; more are requested (`OI-6`, `OI-14`, `DE-client-sample-data`).
 
 ---
 
 ### UC-FEAT-query-ai: Ask local AI a question about processed data
 
+> **Deferred:** not built in release 1.0. The MVP has no AI features ([architecture-of-record](../design/architectural-design.md) `KD-no-ai-in-mvp`; `FEAT-Query-AI` is a stretch feature in vision and scope 4.3).
+
 **UC ID and Name:** UC-FEAT-query-ai: Ask AI assistant
 
 **Created By:** Bradley Helmholz
 
-**Date Created:** [2026-09-22]
+**Date Created:** 2026-09-22
 
 **Primary actor:** User
 
@@ -272,7 +277,9 @@ Failure handling: querying does not change stored data. If the local model fails
 
 **Assumptions:** AI model is running. Ability to interface with data
 
-**Open Issues:** none
+**Open Issues:**
+
+- Which local AI runtime and model to use, and their licenses (`CO-open-weight-models`, `CO-model-licensing`); not logged in OPEN-ISSUES until AI comes into scope.
 
 ---
 
@@ -326,7 +333,7 @@ Failure handling: querying does not change stored data. If the local model fails
 
 **Priority:** Very High
 **Frequency of Use:** Most frequent. Along with decompressing and cleaning data, this is the most important feature.
-**Business Rules:** none
+**Business Rules:** `BR-evidence-based-analysis`, `BR-data-driven-insights`, `BR-rejection-distribution-metric`, `BR-pendency-trend-metric`
 
 **Associated Information:**
 
@@ -342,9 +349,10 @@ Failure handling: creating visualizations does not change stored data. If execut
 **Assumptions:** The client (Malachi) wants visualizations built only from clean data.
 **Open Issues:**
 
-- Which metrics and visualization types are required.
-- Which export format(s) the staged visualizations should support.
-- Whether the user chooses visualization types or always receives all of them.
+- Which metrics and visualization types are required (`OI-1`).
+- Which export format(s) the staged visualizations should support (`OI-2`).
+- Whether the user chooses visualization types or always receives all of them (`OI-3`).
+- Which field rejection charts count by default, the tag or the letter text (`OI-7`), and how pendency is calculated (`OI-8`).
 
 ---
 
@@ -401,8 +409,8 @@ Failure handling: cleaning runs on a working copy. If execution fails, the chang
 **Assumptions:** Cleaning runs automatically once decompiling completes; the user does not start it manually.
 **Open Issues:**
 
-- The column naming convention to standardize to.
-- Whether null handling removes whole records or only null values, and whether the user sees a count of what was removed.
+- The column naming convention to standardize to (`OI-4`).
+- Whether null handling removes whole records or only null values, and whether the user sees a count of what was removed (`OI-5`).
 
 ---
 
@@ -526,7 +534,7 @@ Failure handling: exporting does not change stored data. Files already written s
 **Assumptions:** none
 **Open Issues:**
 
-- Which export file format(s) are required.
+- Which export file format(s) are required (`OI-2`).
 
 ---
 

@@ -46,13 +46,13 @@ _Due: Checkpoint 1._
 
 ### 1.1 Requirements overview
 
-_[Your [specification](../Requirements/software-requirements-specification.md) and your [use cases](../Requirements/use-cases.md) are the requirements overview. Link them here; do not summarize them.]_
+_[Your [specification](../requirements/software-requirements-specification.md) and your [use cases](../requirements/use-cases.md) are the requirements overview. Link them here; do not summarize them.]_
 
-See the [software requirements specification](../Requirements/software-requirements-specification.md) and the [use cases](../Requirements/use-cases.md). MVP scope is section 4.3 of [vision and scope](../Requirements/vision-and-scope.md).
+See the [software requirements specification](../requirements/software-requirements-specification.md) and the [use cases](../requirements/use-cases.md). MVP scope is section 4.3 of [vision and scope](../requirements/vision-and-scope.md).
 
 ### 1.2 Quality goals
 
-_[The **three** quality attributes that most shape your system, in priority order. Pick them from section 9 of your [specification](../Requirements/software-requirements-specification.md) and cite their identifiers. If you cannot rank them, ask your client which one they would give up first; that answer is the ranking._
+_[The **three** quality attributes that most shape your system, in priority order. Pick them from section 9 of your [specification](../requirements/software-requirements-specification.md) and cite their identifiers. If you cannot rank them, ask your client which one they would give up first; that answer is the ranking._
 
 _These are usually the top rows of the table in section 9.1, and the two do different jobs. Here, say why each goal matters to your client. There, say which decision it forces.]_
 
@@ -64,9 +64,9 @@ _These are usually the top rows of the table in section 9.1, and the two do diff
 
 ### 1.3 Stakeholders
 
-_[Your stakeholders are profiled in section 3.1 of [vision and scope](../Requirements/vision-and-scope.md). Link it here; do not copy it.]_
+_[Your stakeholders are profiled in section 3.1 of [vision and scope](../requirements/vision-and-scope.md). Link it here; do not copy it.]_
 
-See section 3.1 of [vision and scope](../Requirements/vision-and-scope.md).
+See section 3.1 of [vision and scope](../requirements/vision-and-scope.md).
 
 ## 2. Architecture Constraints
 
@@ -99,7 +99,7 @@ _[One C4 context diagram: your system as a single box, every kind of user, and *
 
 _Your specification already lists the external systems. Every system named in a software interface (`SI-*`, section 8.3), a communications interface (`CI-*`, section 8.5), or a dependency (`DE-*`, section 2.5) is a box here. A box with none of those behind it is an interface your specification is missing, so add it there too._
 
-_This is your project's one context diagram. Section 4.1 of [vision and scope](../Requirements/vision-and-scope.md) holds the first draft: redraw it here in C4, then replace the drawing there with a link to this section, so there is one diagram to keep current._
+_This is your project's one context diagram. Section 4.1 of [vision and scope](../requirements/vision-and-scope.md) holds the first draft: redraw it here in C4, then replace the drawing there with a link to this section, so there is one diagram to keep current._
 
 _arc42 divides context into a **business context** (who and what crosses the boundary) and a **technical context** (the channels and protocols). This diagram is the business context. The protocols go on the arrows of the container diagram in section 5.1._
 
@@ -183,13 +183,13 @@ The system is one application and one database file because Malachi has to be ab
 
 ### 5.2 Use case areas and components
 
-_[One row per use case area in your [use cases](../Requirements/use-cases.md), taken from the area column of [traceability.md](../traceability.md) section 1, plus one row per **cross-cutting component** that no single area owns (authentication, notifications, file handling, an integration with an external system). A use case area with no row is a part of your system with no home; a component with no area and no cross-cutting reason is one nobody asked for._
+_[One row per use case area in your [use cases](../requirements/use-cases.md), taken from the area column of [traceability.md](../traceability.md) section 1, plus one row per **cross-cutting component** that no single area owns (authentication, notifications, file handling, an integration with an external system). A use case area with no row is a part of your system with no home; a component with no area and no cross-cutting reason is one nobody asked for._
 
 _**Responsibility** is one sentence, what the component owns, not how it works. **Depends on** names other components and external systems, never classes. **Status** is `provisional` until the component has been built through at least one use case, and `proven` after that. At Checkpoint 1 every row is `provisional`; Checkpoint 2 turns at least one to `proven`._
 
 _Project Pulse's component tables also name each component's package. They can because its code exists; yours does not yet, so a row here is a name and a responsibility, and packages come with the design-of-record in week 7.]_
 
-Every use case currently shares the area code `FEAT` ([use-cases.md](../Requirements/use-cases.md) section 3), so the area column below names the feature area and its use cases.
+Every use case currently shares the area code `FEAT` ([use-cases.md](../requirements/use-cases.md) section 3), so the area column below names the feature area and its use cases.
 
 | Use case area | Component | Responsibility | Depends on | Status |
 |---|---|---|---|---|
@@ -261,7 +261,7 @@ _Due: Checkpoint 3. [Filled in once your pipeline exists, after week 11. Three t
 - _**How a change gets there.** From a merged pull request to production: what builds it, what tests it, and where it is released first._
 - _**What survives a restart.** Which state is in the database or a file store, and which is lost when the application restarts._
 
-_Section 4.4 of [vision and scope](../Requirements/vision-and-scope.md) says who can operate the system and where its users are. Cite it; this section says how the deployment meets it.]_
+_Section 4.4 of [vision and scope](../requirements/vision-and-scope.md) says who can operate the system and where its users are. Cite it; this section says how the deployment meets it.]_
 
 **Provisional:** the pipeline does not exist yet. This is the plan the team agreed on 2026-10-27.
 
@@ -340,7 +340,7 @@ _One short subsection each: the rule in one sentence, why, and the file that sho
 
 **8.2.3 API conventions.** There is no network API. Between components, the Desktop UI calls each component's public functions, which return plain Python data classes or small tables, and only Storage creates DuckDB connections; other components receive a cursor from it. Why: one owner for the database file is what makes `CO-layer-separation` testable and avoids two writers. Section 8.4 of the specification (API document) is satisfied by the docstrings of those public functions. Shown in: not yet written.
 
-**8.2.4 Code conventions.** Python 3.12; `ruff` formats and lints every file and runs in CI; public functions have type hints; one package per component in section 5.2; names use the [glossary](../Requirements/project-glossary.md) terms (Office Action, Art Unit, Technology Center, Rejection). Bulk work is done in DuckDB SQL, not by loading whole files into pandas; pandas is acceptable only for small query results. No network library is imported anywhere in the MVP (`SEC-no-data-egress`). Shown in: not yet written.
+**8.2.4 Code conventions.** Python 3.12; `ruff` formats and lints every file and runs in CI; public functions have type hints; one package per component in section 5.2; names use the [glossary](../requirements/project-glossary.md) terms (Office Action, Art Unit, Technology Center, Rejection). Bulk work is done in DuckDB SQL, not by loading whole files into pandas; pandas is acceptable only for small query results. No network library is imported anywhere in the MVP (`SEC-no-data-egress`). Shown in: not yet written.
 
 **8.2.5 Validation.** The check that counts is in Ingestion: before loading, a file is compared with the expected field list for its layout, and while loading, each record is checked for the fields every chart needs (record ID, application number, art unit, document code, submission date). The Desktop UI checks only that a file was chosen. Why: one place decides what "valid" means, so a changed USPTO layout is caught once, before anything is stored (`ROB-format-change`). Shown in: not yet written.
 
@@ -442,9 +442,9 @@ _A decision that turns out wrong is not deleted or rewritten. Mark it **Supersed
 
 ### 10.1 Quality requirements overview
 
-_[Section 9 of your [specification](../Requirements/software-requirements-specification.md) is the overview. Link it here; do not copy it.]_
+_[Section 9 of your [specification](../requirements/software-requirements-specification.md) is the overview. Link it here; do not copy it.]_
 
-See section 9 of the [software requirements specification](../Requirements/software-requirements-specification.md).
+See section 9 of the [software requirements specification](../requirements/software-requirements-specification.md).
 
 ### 10.2 Quality scenarios
 
@@ -469,7 +469,7 @@ _**Verified by** names the test, or the repeatable manual check, that shows the 
 
 _Due: Checkpoint 2, kept current after._
 
-_[**Technical** risks and debt only. Business risks are `RI-*` in [vision and scope](../Requirements/vision-and-scope.md); do not copy them here. Project risks, such as a teammate dropping the course, belong in neither document. Seed this list from the technical `RI-*` items and from any [OPEN-ISSUES.md](../Requirements/OPEN-ISSUES.md) entry whose answer could change the architecture._
+_[**Technical** risks and debt only. Business risks are `RI-*` in [vision and scope](../requirements/vision-and-scope.md); do not copy them here. Project risks, such as a teammate dropping the course, belong in neither document. Seed this list from the technical `RI-*` items and from any [OPEN-ISSUES.md](../requirements/OPEN-ISSUES.md) entry whose answer could change the architecture._
 
 _A **risk** might happen: an external system you have never called, a client dataset you have never seen. **Debt** has already happened: a shortcut you took on purpose and intend to pay back. Each row says how you would find out, or how you would fix it._
 
@@ -489,9 +489,9 @@ _A risk written as a category ("security", "performance") is not a risk. Write t
 
 ## 12. Glossary
 
-_[Domain terms live in your [project glossary](../Requirements/project-glossary.md). Link it and add nothing here unless you need an architecture term your team uses in a special sense.]_
+_[Domain terms live in your [project glossary](../requirements/project-glossary.md). Link it and add nothing here unless you need an architecture term your team uses in a special sense.]_
 
-Domain terms are in the [project glossary](../Requirements/project-glossary.md). Architecture terms used in a special sense here:
+Domain terms are in the [project glossary](../requirements/project-glossary.md). Architecture terms used in a special sense here:
 
 - **Import:** one weekly file loaded into the database; identified by an import ID and recorded in the import log.
 - **Raw records:** records stored exactly as they appeared in the weekly file, never changed after loading.

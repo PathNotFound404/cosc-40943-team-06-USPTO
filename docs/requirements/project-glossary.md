@@ -3,7 +3,7 @@
 **Project:** USPTO Patent Intelligence 
 **Team:** 06
 **Client:** Malachi Hernandez 
-**Version:** 0.2
+**Version:** 0.3
 
 ---
 
@@ -52,6 +52,7 @@ _Rules:_
 |---|---|---|---|
 | 2026-09-24 | 0.1 | Initial terms from the client brief and first client meeting | Cody Pinkston |
 | 2026-10-27 | 0.2 | Removed template examples; alphabetized; added terms used in other documents and in the 2026-10-18 sample weekly file | Turner DeMott |
+| 2026-10-28 | 0.3 | Added Visualization, which the use cases cite as a glossary term; corrected Art Unit and Work Group, since 22 sample records break the work group numbering rule | Cody Pinkston |
 
 ---
 
@@ -77,7 +78,7 @@ The number the USPTO assigns to a patent application when it is filed, for examp
 
 ### Art Unit
 
-A specialized group of patent examiners within the USPTO, organized around one field of technology so its examiners build expertise in that field. Identified by a four-digit number; the first two digits give its [Technology Center](#technology-center) and the first three its [Work Group](#work-group). For example, art unit 3783 is in work group 3780 and Technology Center 3700.
+A specialized group of patent examiners within the USPTO, organized around one field of technology so its examiners build expertise in that field. Identified by a four-digit number; the first two digits give its [Technology Center](#technology-center), and the first three usually give its [Work Group](#work-group) (see that entry for exceptions). For example, art unit 3783 is in work group 3780 and Technology Center 3700.
 
 In the client's words: the group of people who review your patent, including the patent examiner, with subject-matter expertise, who look at prior knowledge before granting.
 
@@ -228,6 +229,14 @@ The USPTO's website for public data downloads and APIs, at https://data.uspto.go
 
 **Source:** client interview 2026-09-17; `DE-uspto-api`
 
+### Visualization
+
+A chart or overview the application produces from the imported data for one metric, such as office actions by rejection type and art unit. Each visualization is shown on its own tab, is linked to the records it was counted from, and can be exported as a labeled image for a post.
+
+**Synonyms:** chart, visual
+
+**Source:** `FEAT-Generate-Visualization` in the vision and scope; `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals`
+
 ### Weekly Release
 
 The set of files the USPTO publishes each week for bulk download, in particular the weekly office action file. The 2026-10-18 sample, `bdr_oa_bulkdata_weekly_2026-10-18.json`, is a single 383 MB file with one JSON record per office action, covering 8,667 office actions submitted 13–16 October 2026.
@@ -238,6 +247,8 @@ The set of files the USPTO publishes each week for bulk download, in particular 
 
 ### Work Group
 
-A subdivision of a [Technology Center](#technology-center) containing several related [Art Units](#art-unit), numbered by the first three digits of its art units followed by 0 (for example, 3780).
+A subdivision of a [Technology Center](#technology-center) containing several related [Art Units](#art-unit), usually numbered by the first three digits of its art units followed by 0 (for example, 3780).
+
+**Note:** The rule has exceptions: in the 2026-10-18 sample, 22 of 8,667 records have a work group that does not match their art unit's first three digits. The work group is therefore always taken from the data as given, never worked out from the art unit (SRS 7.2).
 
 **Source:** `workGroup` in the 2026-10-18 sample weekly file
