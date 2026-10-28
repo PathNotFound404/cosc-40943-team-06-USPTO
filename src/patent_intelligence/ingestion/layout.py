@@ -71,12 +71,23 @@ def compare_field_names(field_names: set[str]) -> tuple[list[str], list[str]]:
     return missing, unexpected
 
 
+def json_values_sql(line: str, fields: tuple[str, ...], as_text: bool = True) -> str:
+    """A DuckDB expression giving a list of `fields` from a JSON text column, in order.
+
+    One list extraction parses the line once; one call per field parses it once per field.
+    """
+    function = "json_extract_string" if as_text else "json_extract"
+    paths = ", ".join(f"'$.{field}'" for field in fields)
+    return f"{function}({line}, [{paths}])"
+
+
 def rejection_reason_sql(line: str) -> str:
     """A DuckDB expression over a JSON text column giving the record's rejection reasons,
     joined with '; ', or '' when the record is valid."""
+    values = json_values_sql(line, REQUIRED_RECORD_FIELDS)
 
     def value(field: str) -> str:
-        return f"json_extract_string({line}, '$.{field}')"
+        return f"values[{REQUIRED_RECORD_FIELDS.index(field) + 1}]"
 
     checks = [
         f"CASE WHEN coalesce({value(field)}, '') = '' THEN 'missing {field}' END"
@@ -92,4 +103,4 @@ def rejection_reason_sql(line: str) -> str:
         f"AND try_cast({value('submissionDate')} AS TIMESTAMPTZ) IS NULL "
         "THEN 'submissionDate is not a timestamp' END"
     )
-    return "concat_ws('; ', " + ", ".join(checks) + ")"
+    return f"(SELECT concat_ws('; ', {', '.join(checks)}) FROM (SELECT {values} AS values))"

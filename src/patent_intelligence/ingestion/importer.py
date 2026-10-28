@@ -14,6 +14,7 @@ from patent_intelligence.ingestion.errors import LayoutMismatchError, Unreadable
 from patent_intelligence.ingestion.layout import (
     EXPECTED_FIELDS,
     JSON_FIELDS,
+    json_values_sql,
     rejection_reason_sql,
 )
 from patent_intelligence.ingestion.readers import JsonLinesReader
@@ -160,15 +161,20 @@ def _refuse_unexpected_fields(cursor: duckdb.DuckDBPyConnection, file_name: str)
 
 
 def _insert_raw_records_sql() -> str:
-    values = ", ".join(
-        f"json_extract(line, '$.{name}')"
+    text_fields = tuple(name for name in EXPECTED_FIELDS if name not in JSON_FIELDS)
+    json_fields = tuple(name for name in EXPECTED_FIELDS if name in JSON_FIELDS)
+    columns = [
+        f"json_values[{json_fields.index(name) + 1}]"
         if name in JSON_FIELDS
-        else f"json_extract_string(line, '$.{name}')"
+        else f"text_values[{text_fields.index(name) + 1}]"
         for name in EXPECTED_FIELDS
-    )
+    ]
     return (
         f"INSERT INTO raw_office_action (import_id, line_number, {', '.join(EXPECTED_FIELDS)}) "
-        f"SELECT ?, line_number, {values} FROM {_CHECKED} WHERE reason = ''"
+        f"SELECT ?, line_number, {', '.join(columns)} FROM ("
+        f"SELECT line_number, {json_values_sql('line', text_fields)} AS text_values, "
+        f"{json_values_sql('line', json_fields, as_text=False)} AS json_values "
+        f"FROM {_CHECKED} WHERE reason = '')"
     )
 
 
