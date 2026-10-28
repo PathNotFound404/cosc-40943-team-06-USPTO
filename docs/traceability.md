@@ -117,7 +117,7 @@ One row per use case. `/design` sets **Build** to `📐 Designed` and fills **De
 
 | Use case | Feature | Release | Build | Design | Code | Tests | Verify |
 |---|---|---|---|---|---|---|---|
-| `UC-FEAT-decompile-files` (proving slice) | `FEAT-Intake-Data` | 1.0 | 📐 Designed | [design/intake.md](design/intake.md) | | | 🔎 None |
+| `UC-FEAT-decompile-files` (proving slice) | `FEAT-Intake-Data` | 1.0 | ✅ Built | [design/intake.md](design/intake.md) | `src/patent_intelligence/ingestion/`, `storage/`, `jobs/`, `ui/import_view.py`, `app.py` | `tests/ingestion/test_import_file.py`: main, 3a, 4a, 5a, already imported, interrupted (rollback and killed process), logging; `tests/ui/test_import_view.py`: notice, several files; `tests/storage/`, `tests/jobs/`: trunk | ✅ Verified |
 | `UC-FEAT-clean-data` | `FEAT-Intake-Data` | 1.0 | 📐 Designed | [design/intake.md](design/intake.md) | | | 🔎 None |
 | `UC-FEAT-create-visuals` | `FEAT-Generate-Visualization` | 1.0 | 📐 Designed | [design/visualization.md](design/visualization.md) | | | 🔎 None |
 | `UC-FEAT-verify-source` | `FEAT-Verify-Source` | 1.0 | 📐 Designed | [design/verification.md](design/verification.md) | | | 🔎 None |

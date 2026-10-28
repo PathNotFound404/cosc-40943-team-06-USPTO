@@ -45,12 +45,12 @@ classDiagram
     }
     class Ingestion {
         <<new, ingestion>>
-        +import_file(path, import_time, report_progress) ImportSummary
+        +import_file(database, path, import_time, report_progress) ImportSummary
     }
     class JsonLinesReader {
         <<new, ingestion>>
         +check_layout(path) LayoutCheck
-        +records(path) Iterator
+        +stage_lines(cursor, path, table)
     }
     class Cleaning {
         <<new, cleaning>>
@@ -73,16 +73,17 @@ classDiagram
 
 Package root: `src/patent_intelligence/`, one package per component ([8.2.4](architectural-design.md#82-other-concepts)). Tests mirror it under `tests/`.
 
-- `ingestion/importer.py` (new): `import_file`. Checks the layout, hashes the file, refuses a file already imported, then streams records into the raw tables in one transaction and returns an `ImportSummary` (import ID, records loaded, records rejected, rejection reasons by count).
-- `ingestion/readers.py` (new): one reader per file layout behind one interface (`RISK-format-drift`). Release 1.0 has one, `JsonLinesReader`, for the one-JSON-record-per-line layout in [SRS 7.2](../requirements/software-requirements-specification.md#72-data-dictionary).
+- `ingestion/importer.py` (new): `import_file`. Receives the Storage handle ([8.2.3](architectural-design.md#82-other-concepts)), checks the layout, hashes the file, refuses a file already imported, then loads the records into the raw tables in one transaction and returns an `ImportSummary` (import ID, records loaded, records rejected, rejected records by reason).
+- `ingestion/readers.py` (new): one reader per file layout behind one interface (`RISK-format-drift`). Release 1.0 has one, `JsonLinesReader`, for the one-JSON-record-per-line layout in [SRS 7.2](../requirements/software-requirements-specification.md#72-data-dictionary). `stage_lines` has DuckDB stream every line into a temporary table of line number and line text; the checks and inserts that follow are SQL over that table ([8.2.4](architectural-design.md#82-other-concepts)).
 - `ingestion/layout.py` (new): the expected field list for each layout and the per-record checks of [8.2.5](architectural-design.md#82-other-concepts). This is the one place that defines "valid".
+- `tests/fixtures/office_actions_20.jsonl` (new): 20 records from the sample, with placeholder examiner numbers and shortened letter text; how it was cut is in `tests/fixtures/README.md`.
 - `ingestion/errors.py` (new): `UnsupportedFileError`, `LayoutMismatchError` (carries the missing and unexpected fields), `UnreadableFileError`.
 - `cleaning/staging.py` (new): `build_staged_dataset`. Replaces the staged views in one transaction and checks they have the columns charts need.
 - `cleaning/errors.py` (new): `NoRawDataError`, `CleaningFailedError`, `MissingColumnsError` (carries the column names).
 - `storage/database.py` (new): opens the one DuckDB connection, sets the memory limit and spill folder from available memory, hands out cursors and transactions. The only module that imports `duckdb` connection functions ([8.2.3](architectural-design.md#82-other-concepts)).
 - `storage/migrations/001_raw_tables.sql` (new): the tables in [Data model](#data-model). `storage/migrate.py` (new) applies numbered scripts on start-up ([8.2.8](architectural-design.md#82-other-concepts)).
 - `jobs/runner.py` (new): `JobRunner`, one background thread, one job at a time, with Qt signals for progress, finished, and failed (`USE-progress`).
-- `jobs/import_job.py` (new): runs `import_file`, then `build_staged_dataset`, for one file.
+- `jobs/import_job.py` (new): runs `import_file`, then `build_staged_dataset`, for one file. Built with `UC-FEAT-decompile-files` it runs `import_file` only; `UC-FEAT-clean-data` adds the second call.
 - `errors.py` (new): `AppError`, the base of every component's exceptions, with a plain-English `message` for the UI ([8.2.1](architectural-design.md#82-other-concepts)).
 - `settings.py` (new): the data folder, from `~/Library/Application Support` in production or an environment variable in development ([8.2.6](architectural-design.md#82-other-concepts)).
 - `logging_setup.py` (new): the rotating log file of [8.2.7](architectural-design.md#82-other-concepts).
@@ -188,7 +189,7 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Th
 
 | Function or job | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
-| `ingestion.import_file` | `ImportJob` only, on the Job Runner thread; never the UI thread | File path, import time (passed in, [8.2.2](architectural-design.md#82-other-concepts)), progress callback | `ImportSummary`: import ID, file name, records loaded, records rejected, rejected count per reason, and `already_imported` true when the content hash matched (nothing written) | 3a: `UnsupportedFileError` (not a known layout) or `LayoutMismatchError` naming the missing and unexpected fields. 4a: `UnreadableFileError` with the first bad line number. 5a: not an error; the counts are in the summary. |
+| `ingestion.import_file` | `ImportJob` only, on the Job Runner thread; never the UI thread | Storage handle, file path, import time (passed in, [8.2.2](architectural-design.md#82-other-concepts)), progress callback | `ImportSummary`: import ID, file name, records loaded, records rejected, rejected count per reason, and `already_imported` true when the content hash matched (nothing written) | 3a: `UnsupportedFileError` (not a known layout) or `LayoutMismatchError` naming the missing and unexpected fields. 4a: `UnreadableFileError` with the first bad line number. 5a: not an error; the counts are in the summary. |
 | `cleaning.build_staged_dataset` | `ImportJob` only, after a successful import | None | `StagedSummary`: office actions staged, rejection entries staged | 1a: `NoRawDataError`. 2a: `CleaningFailedError`. 3a: `MissingColumnsError` naming the columns. |
 | `jobs.JobRunner.submit` | The UI | A job object | Signals: `progress(fraction, message)`, `finished(result)`, `failed(AppError)` | A second job submitted while one runs waits its turn ([8.2.8](architectural-design.md#82-other-concepts)). |
 | `storage.open` | `app.py` at start-up only | Data folder | A database handle; pending migrations applied | Folder not writable: `AppError` shown at start-up. |
@@ -214,6 +215,8 @@ _A decision that affects the whole system rather than this area is an architectu
 **Several files dropped at once.** Each file is its own import job, run in the order dropped, so one bad file does not stop the others (`ROB-bad-input`) and an interruption loses only the file in progress (`ROB-resume`). Rejected: one transaction for all files, which would discard good files because of one bad one.
 
 **How the layout check reads the file.** It compares the field names of the first 100 records with the expected list before any record is stored. Rejected: checking every record's field names before loading, which reads a 50 GB file twice. A field that disappears after the first 100 records is still caught, because each record is checked again while loading.
+
+**What counts as a missing or unexpected field.** The sample leaves optional fields out of a record rather than sending them empty (`applicationDeemedWithdrawnDate` is in 4 of 8,667 records), so a field is *missing* only when it is one SRS 7.2 marks Required and it is absent from every record in the first 100. Any field not in the expected list is *unexpected*, wherever it appears: after the load reads the lines into DuckDB, one SQL query over all of them looks for unknown field names, and finding one refuses the file and rolls back. Rejected: checking unexpected fields only in the first 100 records, which would drop a later field's values silently (`BR-no-data-alteration`). Decided by the developer during the build, 2026-10-28.
 
 ## Data model
 
@@ -293,6 +296,7 @@ Fixtures are small files cut from the sample under `tests/fixtures/` ([8.2.10](a
 | UC-FEAT-decompile-files main | unit | Every raw field equals the source value character for character, including `oaText`, `rejections`, and timestamps (`BR-no-data-alteration`) |
 | UC-FEAT-decompile-files 3a | unit | A fixture that is not JSON lines (for example a ZIP or a CSV) raises `UnsupportedFileError` and nothing is written |
 | UC-FEAT-decompile-files 3a | unit | A fixture missing `submissionDate` from every record raises `LayoutMismatchError` naming it; one with an extra field names that field; nothing is written (`QS-changed-layout-refused`) |
+| UC-FEAT-decompile-files 3a | integration | A 105-record file with an extra field only in record 105 is refused naming the field, and nothing is written (added during the build) |
 | UC-FEAT-decompile-files 4a | integration | A fixture truncated mid-line raises `UnreadableFileError` with the line number, and no raw or rejected rows and no import log entry remain (`QS-corrupt-file-reported`) |
 | UC-FEAT-decompile-files 5a | integration | A fixture with 2 records lacking `groupArtUnitNumber` and 1 with a five-digit art unit loads the rest, stores 3 rejected records with reasons, and loaded plus rejected equals the lines in the file |
 | UC-FEAT-decompile-files duplicate | integration | Importing the same fixture twice reports already imported and the raw row count is unchanged (`DI-no-duplicates`) |
@@ -310,7 +314,7 @@ Fixtures are small files cut from the sample under `tests/fixtures/` ([8.2.10](a
 
 _[Designing an area against real code is when the architecture's guesses meet reality. If this design needs a component the map does not have, moves a responsibility, or adds a dependency, **change [the architecture-of-record](architectural-design.md) in the same pull request** and list each change here in one line. If nothing changed, write "None". A design that silently disagrees with the architecture leaves two maps, and the agent will follow whichever it reads last.]_
 
-None. The shared `errors.py`, `settings.py`, and `logging_setup.py` modules are the conventions of 8.2.1, 8.2.6, and 8.2.7, not new components.
+None to the structure. The shared `errors.py`, `settings.py`, and `logging_setup.py` modules are the conventions of 8.2.1, 8.2.6, and 8.2.7, not new components. When `UC-FEAT-decompile-files` was built, the architecture's 8.2 "Shown in" lines were filled in, and Ingestion, Storage, Job Runner, and Desktop UI were marked proven in 5.2.
 
 ## Open questions & risks
 
