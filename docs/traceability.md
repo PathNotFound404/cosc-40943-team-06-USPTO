@@ -117,11 +117,11 @@ One row per use case. `/design` sets **Build** to `📐 Designed` and fills **De
 
 | Use case | Feature | Release | Build | Design | Code | Tests | Verify |
 |---|---|---|---|---|---|---|---|
-| `UC-FEAT-decompile-files` (proving slice) | `FEAT-Intake-Data` | 1.0 | ❌ Not started | | | | 🔎 None |
-| `UC-FEAT-clean-data` | `FEAT-Intake-Data` | 1.0 | ❌ Not started | | | | 🔎 None |
-| `UC-FEAT-create-visuals` | `FEAT-Generate-Visualization` | 1.0 | ❌ Not started | | | | 🔎 None |
-| `UC-FEAT-verify-source` | `FEAT-Verify-Source` | 1.0 | ❌ Not started | | | | 🔎 None |
-| `UC-FEAT-export-visuals` | `FEAT-Generate-Visualization` | 1.0 | ❌ Not started | | | | 🔎 None |
+| `UC-FEAT-decompile-files` (proving slice) | `FEAT-Intake-Data` | 1.0 | 📐 Designed | [design/intake.md](design/intake.md) | | | 🔎 None |
+| `UC-FEAT-clean-data` | `FEAT-Intake-Data` | 1.0 | 📐 Designed | [design/intake.md](design/intake.md) | | | 🔎 None |
+| `UC-FEAT-create-visuals` | `FEAT-Generate-Visualization` | 1.0 | 📐 Designed | [design/visualization.md](design/visualization.md) | | | 🔎 None |
+| `UC-FEAT-verify-source` | `FEAT-Verify-Source` | 1.0 | 📐 Designed | [design/verification.md](design/verification.md) | | | 🔎 None |
+| `UC-FEAT-export-visuals` | `FEAT-Generate-Visualization` | 1.0 | 📐 Designed | [design/visualization.md](design/visualization.md) | | | 🔎 None |
 | `UC-FEAT-query-ai` | `FEAT-Query-AI` | Deferred | ❌ Not started | | | | 🔎 None |
 
 ---
