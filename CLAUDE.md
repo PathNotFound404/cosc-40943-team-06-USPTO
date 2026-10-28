@@ -34,7 +34,7 @@ A single-user macOS desktop application for Malachi Hernandez. It imports the US
 
 These were decided in [architecture section 9.2](docs/design/architectural-design.md#92-key-decisions). Do not substitute alternatives.
 
-- Python 3.12, with `pip` and a virtual environment (`requirements.txt`)
+- Python 3.14, with `pip` and a virtual environment (`requirements.txt`)
 - PySide6 for the user interface; matplotlib for charts (`KD-ui-framework`)
 - DuckDB as one local database file, opened in-process, with a pinned version (`KD-embedded-duckdb`)
 - `pytest` for tests; `ruff` for linting and formatting
@@ -46,7 +46,7 @@ These were decided in [architecture section 9.2](docs/design/architectural-desig
 There is no code yet. The first slice creates `requirements.txt` and the package layout; update this section when it does.
 
 ```sh
-python3.12 -m venv .venv
+python3.14 -m venv .venv          # Windows: py -3.14 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ruff format . && ruff check .

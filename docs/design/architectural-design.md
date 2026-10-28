@@ -3,7 +3,7 @@
 **Project:** USPTO Patent Intelligence
 **Team:** 06
 **Client:** Malachi Hernandez (personal project)
-**Version:** 0.1
+**Version:** 0.2
 
 ---
 
@@ -37,6 +37,7 @@ _[These are slugs, like every other identifier in your project, so an inserted d
 | Version | Date | Author | Change |
 |---|---|---|---|
 | 0.1 | 2026-10-27 | Cody Pinkston | Initial draft for Checkpoint 1; sections 6, 7, 10.2, and 11 drafted early as provisional |
+| 0.2 | 2026-10-28 | Cody Pinkston | Python version changed from 3.12 to 3.14 (team decision) |
 
 ---
 
@@ -166,7 +167,7 @@ C4Container
     Person(malachi, "Malachi", "Sole user and maintainer")
 
     System_Boundary(upi, "USPTO Patent Intelligence") {
-        Container(app, "Desktop Application", "Python 3.12, PySide6, matplotlib", "Every view, the import and cleaning pipeline, metric queries, provenance, and export, in one process")
+        Container(app, "Desktop Application", "Python 3.14, PySide6, matplotlib", "Every view, the import and cleaning pipeline, metric queries, provenance, and export, in one process")
         ContainerDb(db, "Analytics Database", "DuckDB file", "Raw records, staged dataset, import log, rejected records")
     }
 
@@ -340,7 +341,7 @@ _One short subsection each: the rule in one sentence, why, and the file that sho
 
 **8.2.3 API conventions.** There is no network API. Between components, the Desktop UI calls each component's public functions, which return plain Python data classes or small tables, and only Storage creates DuckDB connections; other components receive a cursor from it. Why: one owner for the database file is what makes `CO-layer-separation` testable and avoids two writers. Section 8.4 of the specification (API document) is satisfied by the docstrings of those public functions. Shown in: not yet written.
 
-**8.2.4 Code conventions.** Python 3.12; `ruff` formats and lints every file and runs in CI; public functions have type hints; one package per component in section 5.2; names use the [glossary](../requirements/project-glossary.md) terms (Office Action, Art Unit, Technology Center, Rejection). Bulk work is done in DuckDB SQL, not by loading whole files into pandas; pandas is acceptable only for small query results. No network library is imported anywhere in the MVP (`SEC-no-data-egress`). Shown in: not yet written.
+**8.2.4 Code conventions.** Python 3.14; `ruff` formats and lints every file and runs in CI; public functions have type hints; one package per component in section 5.2; names use the [glossary](../requirements/project-glossary.md) terms (Office Action, Art Unit, Technology Center, Rejection). Bulk work is done in DuckDB SQL, not by loading whole files into pandas; pandas is acceptable only for small query results. No network library is imported anywhere in the MVP (`SEC-no-data-egress`). Shown in: not yet written.
 
 **8.2.5 Validation.** The check that counts is in Ingestion: before loading, a file is compared with the expected field list for its layout, and while loading, each record is checked for the fields every chart needs (record ID, application number, art unit, document code, submission date). The Desktop UI checks only that a file was chosen. Why: one place decides what "valid" means, so a changed USPTO layout is caught once, before anything is stored (`ROB-format-change`). Shown in: not yet written.
 
