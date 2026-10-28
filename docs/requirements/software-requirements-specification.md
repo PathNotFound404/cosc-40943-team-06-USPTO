@@ -2,8 +2,8 @@
 
 **Project:** USPTO Patent Intelligence
 **Team:** 6
-**Client:** USPTO
-**Version:** 1.2
+**Client:** Malachi Hernandez (personal project)
+**Version:** 1.3
 
 ---
 
@@ -38,8 +38,9 @@ _Requirements cited from elsewhere keep their own identifiers: `UC-*` from [use-
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| _[2027-09-24]_ | 1.1 | Initial draft | _[Edwin Rodriguez]_ |
-| _[2027-10-06]_ | 1.2 | Added secttions | _[Edwin Rodriguez]_ | 
+| 2026-09-24 | 1.1 | Initial draft | Edwin Rodriguez |
+| 2026-10-06 | 1.2 | Added sections | Edwin Rodriguez |
+| 2026-10-28 | 1.3 | Filled section 5.2; data model and dictionary from the 2026-10-18 sample file; aligned with the architecture-of-record (macOS only, AI deferred); TBDs linked to `OI-*` | Cody Pinkston |
 
 ---
 
@@ -49,7 +50,7 @@ _Requirements cited from elsewhere keep their own identifiers: `UC-*` from [use-
 
 _[What the system is for: who wants it, why, and who will use it. Even though the vision and scope answers this, restate it in a paragraph here, because people read this document without having read that one.]_
 
-USPTO Office Action data is public but hard to analyze. It comes as large weekly ZIP files, bulk downloads, and API records. USPTO Patent Intelligence is a desktop application for macOS that takes this data, processes it entirely on the user's computer, and turns it into dashboards, trend analysis, flagged anomalies, and AI-generated summaries. It is for analysts who want to know what is happening in patent examination, where it is happening, and which patterns need a closer look. All processing and AI run locally, and no data is sent to the cloud.
+USPTO Office Action data is public but hard to analyze. It comes as large weekly bulk files, published raw and uncleaned. USPTO Patent Intelligence is a desktop application for macOS that takes this data, processes it entirely on the user's computer, and turns it into charts and overviews whose every figure can be traced back to the records it came from. It is built for one user, Malachi Hernandez, who publishes data-backed posts about how the USPTO's examination is performing and needs to produce them in far less than the 8 hours each one takes by hand. All processing runs locally, and no data is sent to the cloud. Release 1.0 has no AI features and no anomaly detection; those are later releases (vision and scope 4.3).
 
 ### 1.2 The purpose of this document
 
@@ -94,9 +95,9 @@ _[How this system relates to other systems and to the user's environment. Self-c
 
 USPTO Patent Intelligence is a new, self-contained desktop application. It is not part of any USPTO system or any of the client's companies. Data flows in one direction: from USPTO bulk files, into the application.
 
-Internally, the application has separate layers for data intake, storage, analytics, local AI, and visualization/export, all running on the client's computer.
+Internally, the application has separate layers for data intake, storage, analytics, and visualization/export, all running on the client's computer. A local AI layer is planned for a later release.
 
-See the product perspective in [vision-and-scope.md](vision-and-scope.md) section 4.1. Architecture context diagram: TBD.
+See the product perspective in [vision-and-scope.md](vision-and-scope.md) section 4.1 and the context diagram in section 3 of the [architecture-of-record](../design/architectural-design.md#3-context-and-scope).
 
 ### 2.2 User classes and characteristics
 
@@ -118,9 +119,9 @@ _Examples:_
 - _`OE-server-platform`: The system shall run on a server running the current corporate-approved version of Linux._
 - _`OE-access-paths`: The system shall permit access from the corporate intranet, from a VPN connection, and from Android and iOS phones and tablets._
 
-- OE-desktop-os: The application shall run on macOS and Windows. Minimum versions: macOS 14 and Windows 11 (TBD).
-- OE-minimum-hardware: The application shall run on a computer with at least 16 GB of RAM and 50 GB of free storage. A GPU is optional (TBD).
-- OE-hardware-adaptive: When it starts, the application shall detect the available CPU, GPU, RAM, and storage, and adjust its processing and AI model choice to match.
+- OE-desktop-os: The application shall run on macOS on Apple silicon. Minimum macOS version: TBD (`OI-17`). Windows is out of scope for release 1.0 (vision and scope 4.3), but only cross-platform libraries are used so it remains possible later (architecture `TD-macos-only`).
+- OE-minimum-hardware: The application shall run on a computer with at least 16 GB of RAM and 50 GB of free storage. A GPU is optional (TBD, `OI-17`).
+- OE-hardware-adaptive: When it starts, the application shall detect the available CPU, RAM, and storage, and adjust its processing to match. Adjusting the AI model choice is deferred with the AI features (architecture `KD-no-ai-in-mvp`).
 - OE-offline-operation: Once data is loaded, the application shall do all processing, analysis, and AI work without an internet connection.
 - OE-no-manual-dependencies: The application shall bundle or automatically start everything it needs (database, runtimes, AI models), so the user never installs or configures them manually.
 - OE-client-machine: The client's computer is a 2022 MacBook Air with 24 GB of memory, a 2 TB SSD, and no discrete GPU. All performance measurements are taken on this machine.
@@ -139,11 +140,11 @@ _Examples:_
 _The constraint students forget: **who maintains this after you graduate, and what do they already know how to run?** If the answer is one person who knows Python, a Spring Boot service is a constraint violation nobody wrote down._
 
 - CO-local-execution: The application shall not use cloud AI services or send user data off the computer.
-- CO-open-weight-models: AI features shall use locally run open-weight models, such as Llama-family models.
-- CO-swappable-models: It shall be possible to replace or upgrade the AI model without changing code.
+- CO-open-weight-models: AI features shall use locally run open-weight models, such as Llama-family models. *Deferred:* applies when AI features are added (`KD-no-ai-in-mvp`).
+- CO-swappable-models: It shall be possible to replace or upgrade the AI model without changing code. *Deferred:* applies when AI features are added (`KD-no-ai-in-mvp`).
 - CO-layer-separation: The data processing, analytics, AI, and user interface shall be separate layers that can each be tested independently.
 - CO-technology-evaluation: The technologies suggested in the brief are not mandatory. The team shall document its technology choice for each layer.
-- CO-model-licensing: All bundled models and runtimes shall have licenses that allow the client's intended use (TBD).
+- CO-model-licensing: All bundled models and runtimes shall have licenses that allow the client's intended use (TBD). *Deferred:* applies when AI features are added (`KD-no-ai-in-mvp`).
 - CO-no-paid-ai-services: The application shall not use OpenAI, Anthropic, or any other paid or cloud AI service.
 - CO-zero-recurring-cost: The application shall have no hosting, subscription, or API costs.
 - CO-single-maintainer: The client maintains the application after the team graduates and does not write code. The technology stack shall be kept simple, and routine tasks (updating data, changing the AI model) shall not require coding.
@@ -162,12 +163,12 @@ _Examples:_
 - AS-office-action-format: The format of USPTO Office Action files stays stable during the project.
 - AS-user-hardware: Users' computers meet the minimum hardware requirement.
 - DE-uspto-bulk-data: The project depends on the USPTO continuing to publish Office Action data as weekly ZIP files and bulk downloads.
-- DE-uspto-api: API access depends on the USPTO Open Data Portal, which requires a USPTO.gov account and an API key. Which API currently provides Office Action data is TBD.
-- DE-local-llm-runtime: AI features depend on a third-party local AI runtime and third-party model files.
+- DE-uspto-api: API access depends on the USPTO Open Data Portal, which requires a USPTO.gov account and an API key. Which API currently provides Office Action data is TBD. *Deferred:* the API is not used in release 1.0 (`CO-bulk-data-first`).
+- DE-local-llm-runtime: AI features depend on a third-party local AI runtime and third-party model files. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
 - AS-weekly-cadence: The client processes one USPTO release per week (`BR-weekly-office-action-data`).
 - AS-speed-not-critical: Processing does not need to be fast. The client said it can run unattended, as long as it is low cost.
-- AS-release-scope: Whether grant and litigation data are included in release 1.0, or only office action data, is TBD.
-- DE-client-sample-data: Requirements in sections 7 and 8 depend on the sample data and process video the client said he would send.
+- AS-release-scope: Whether grant and litigation data are included in release 1.0, or only office action data, is TBD (`OI-10`). Vision and scope 4.3 currently puts them out of scope.
+- DE-client-sample-data: Requirements in sections 7 and 8 depend on sample data from the client. One weekly office action file (`bdr_oa_bulkdata_weekly_2026-10-18.json`) has been received and is the basis of sections 7.1 and 7.2. Further weekly files (`OI-14`) and the client's process video (`OI-15`) are still outstanding, and no grant or litigation sample has been received.
 - DE-uspto-grant-data: Grant analysis depends on USPTO patent grant datasets (`BR-separate-dataset-domains`).
 - DE-litigation-data: Litigation analysis depends on the availability of patent litigation datasets (`BR-separate-dataset-domains`).
 - DE-uspto-api-outages: The client reports that the USPTO API sometimes drops out for about 2 minutes.
@@ -209,6 +210,24 @@ _Example: `FR-SAVE-autosave-active`: While a student is editing a weekly activit
 
 _**Every requirement here needs an oracle.** If you cannot say how a tester would tell whether it holds, it is not a requirement yet.]_
 
+#### Long-running tasks
+
+- `FR-TASK-completion-notice`: When an import, a cleaning run, or an export finishes or fails, the system shall show a notice inside the application stating the outcome; for an import, the notice shall state the number of records loaded and the number rejected.
+  *Oracle:* Run each task once to success and once to failure. Each run produces an in-app notice naming the outcome, and for an import, loaded plus rejected equals the number of records in the file (`SM-Complete-Intake` in vision and scope).
+  *Applies to:* `UC-FEAT-decompile-files` steps 7 and 5a2, `UC-FEAT-clean-data` steps 4 and 2a2, `UC-FEAT-export-visuals` step 6. Notices stay inside the application (`CI-in-app-notifications`, `CI-no-external-messages`).
+
+#### Charts
+
+- `FR-CHART-counted-field`: The system shall label every chart, on screen and in every export, with the data field its figures were counted from, for example the USPTO rejection tag or the rejection text in the office action letter.
+  *Oracle:* For every chart type, the on-screen chart and its exported image both name the field; opening the chart's source records (`UC-FEAT-verify-source`) shows that same field.
+  *Applies to:* `UC-FEAT-create-visuals`, `UC-FEAT-export-visuals`, `UC-FEAT-verify-source`. Grounded in `BR-evidence-based-analysis` and `RI-Inconsistent-Source-Fields` (vision and scope 2.6). Which field each metric uses by default is open (`OI-7`).
+
+#### AI verification (deferred)
+
+- `FR-VERIFY-ai-claims`: Where the AI assistant is included, the system shall check that every number and record reference in an AI answer appears in the records the answer cites, and shall not let an answer that fails the check be exported as verified.
+  *Oracle:* An answer containing a number not present in its cited records is flagged and cannot be exported as verified; an answer whose figures all appear in its cited records can be.
+  *Applies to:* `UC-FEAT-query-ai` steps 6 and 4a; `SAF-ai-grounding`. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
+
 ---
 
 ## 6. Business Rules
@@ -225,40 +244,32 @@ See [business-rules.md](business-rules.md).
 
 _[The entities in the problem domain and how they relate, as a mermaid class diagram. Model the **business**, not your database schema: this is what the client would recognize, before any decision about tables or persistence.]_
 
-    ```mermaid
-    classDiagram
-      class Team {
-        +String name
-      }
-      class Student {
-        +String email
-      }
-      Team "1" --> "*" Student : has
-    ```
-
-Based on the client interview and business rules. To be revised when sample data arrives (`DE-client-sample-data`).
+Based on the client interview, the business rules, and the 2026-10-18 sample weekly file. Granted patents and litigation cases are drawn from the business rules only; no grant or litigation sample has been received (`DE-client-sample-data`).
 
 ```mermaid
 classDiagram
   class TechnologyCenter {
     +String number
   }
+  class WorkGroup {
+    +String number
+  }
   class ArtUnit {
     +String number
   }
   class Examiner {
-    +String name
+    +String employeeNumber
   }
   class PatentApplication {
     +String applicationNumber
     +Date filingDate
   }
   class OfficeAction {
-    +Date mailDate
-    +String actionType
+    +Date submissionDate
+    +String documentCode
   }
   class Rejection {
-    +String statutoryBasis
+    +String type
   }
   class GrantedPatent {
     +String patentNumber
@@ -268,7 +279,8 @@ classDiagram
     +String caseNumber
     +Date filingDate
   }
-  TechnologyCenter "1" --> "*" ArtUnit : contains
+  TechnologyCenter "1" --> "*" WorkGroup : contains
+  WorkGroup "1" --> "*" ArtUnit : contains
   ArtUnit "1" --> "*" Examiner : includes
   ArtUnit "1" --> "*" PatentApplication : examines
   Examiner "1" --> "*" OfficeAction : issues
@@ -283,22 +295,34 @@ classDiagram
 
 _[Each entity's fields, with data type, allowed values, defaults, and validation rules. Where a use case already specifies a field's validation in its Associated Information, cite the use case instead of repeating it.]_
 
-TBD: the exact fields and formats depend on the USPTO files, which have not been received (`DE-client-sample-data`). The known fields so far:
+Office action fields come from the 2026-10-18 sample weekly file: 8,667 records, one JSON object per line. The **source field** column gives the field name in that file. The **filled** column counts the sample records with a non-empty value, so a reader can see which fields charts can rely on. Fields are stored unchanged in the raw records (`BR-no-data-alteration`); the rules below are what Ingestion checks (architecture 8.2.5). Other weeks may differ (`OI-14`).
 
-| Entity | Field | Type | Rules |
-|---|---|---|---|
-| Patent Application | applicationNumber | Text | Required, unique |
-| Patent Application | filingDate | Date | Required |
-| Office Action | mailDate | Date | Required |
-| Office Action | actionType | Text | Allowed values TBD from data |
-| Rejection | statutoryBasis | List | 102, 103, 112, Double Patenting, Other (`BR-102-rejection`, `BR-103-rejection`, `BR-112-rejection`, `BR-double-patenting`) |
-| Art Unit | number | Text | Required |
-| Examiner | name | Text | Stored as it appears in USPTO data |
-| Granted Patent | patentNumber | Text | Required, unique |
-| Granted Patent | grantDate | Date | On or after the filing date |
-| Litigation Case | caseNumber | Text | Required |
+| Entity | Field | Source field | Type | Filled (of 8,667) | Rules |
+|---|---|---|---|---|---|
+| Office Action | record ID | `id` | Text | 8,667 | Required, unique; the key provenance uses |
+| Office Action | document code | `documentCode` | Text | 8,667 | Required. Values seen: `CTNF` (non-final, 5,160), `CTFR` (final, 3,507); other codes are kept and reported, not rejected |
+| Office Action | submission date | `submissionDate` | Timestamp (UTC) | 8,667 | Required; the date the office action was submitted, used to place it in a week |
+| Office Action | letter text | `oaText` | Text | 8,667 | Required; stored in full (architecture `KD-raw-and-staged`); never logged |
+| Office Action | examiner | `examinerEmployeeNumber` | Text | 8,667 | Required; identifies a real person (`DI-identifiable-people`) |
+| Office Action | art unit | `groupArtUnitNumber` | Integer, 4 digits | 8,667 | Required (`BR-art-unit-assignment`) |
+| Office Action | work group | `workGroup` | Text, 4 digits | 8,667 | Required; usually the first three digits of the art unit followed by 0, but 22 sample records differ, so it is stored as given and never derived from the art unit |
+| Office Action | Technology Center | `techCenter` | Text, 4 digits | 8,667 | Required; equals the first two digits of the art unit followed by 00 |
+| Rejection | type | `rejections[].type` | Text | 8,644 | Values seen: `101`, `102`, `103`, `112`, `DoublePatent`, `Other` (`BR-102-rejection`, `BR-103-rejection`, `BR-112-rejection`, `BR-double-patenting`); 23 records have a rejection with no type. Every sample record has exactly one rejection entry, although its letter text may cite more (`RI-Inconsistent-Source-Fields`, `OI-7`) |
+| Rejection | label | `rejections[].label` | Text | 8,667 | Finer detail such as `112(b)` |
+| Patent Application | application number | `patentApplicationNumber` | Text | 8,667 | Required; not unique per office action, because one application can receive several |
+| Patent Application | filing date | `filingDate` | Timestamp (UTC) | 8,667 | Required; on or before the submission date |
+| Patent Application | effective filing date | `effectiveFilingDate` | Timestamp (UTC) | 8,667 | Required |
+| Patent Application | application type | `applicationTypeCategory` | Text | 8,667 | Values seen: `REGULAR` (8,658), `REISSUE` (9) |
+| Patent Application | subject matter | `inventionSubjectMatterCategory` | Text | 8,667 | Values seen: `UTL` utility (8,645), `DES` design (22) |
+| Patent Application | title | `inventionTitle` | Text | 8,665 | Optional |
+| Patent Application | national class and subclass | `nationalClass`, `nationalSubClass` | Text | 2,701 / 2,697 | Optional; mostly empty, so not suitable for charts without a stated caveat |
+| Import (provenance) | source file, import ID, import time | (added by the application) | Text, Timestamp | All | Required on every raw record (`DI-source-tracking`) |
+| Granted Patent | patent number, grant date | Not in the office action file | Text, Date | — | TBD: no grant sample received (`DE-uspto-grant-data`, `OI-10`) |
+| Litigation Case | case number, filing date | Not in the office action file | Text, Date | — | TBD: no litigation sample received (`DE-litigation-data`, `OI-10`) |
 
-**Pendency** (`BR-pendency-trend-metric`): the calculation formula is TBD from the client.
+The file's remaining fields (`accessLevelCategory`, `aiaindicator`, `applicationDeemedWithdrawnDate`, `applicationStatusNumber`, `cmsIdentifier`, `cmsLastModifiedTimeStamp`, `customerNumber`, `documentActiveIndicator`, `obsoleteDocumentIdentifier`, `patentApplicationConfirmationNumber`, `sections`, `sourceSystemName`, `systemCreateTimestamp`, `systemLastModifiedTimestamp`) are kept in the raw records but are not used by any release 1.0 chart.
+
+**Pendency** (`BR-pendency-trend-metric`): the formula is open, specifically whether the client wants first-action or total pendency (`OI-8`; see the glossary entry for Pendency).
 
 ### 7.3 Reports
 
@@ -326,7 +350,7 @@ _[Where the data comes from, how it is kept correct, how long it is kept, and ho
 - `DI-retention`: Data is kept on the client's computer until he deletes it, to support historical analysis (`BR-historical-analysis`).
 - `DI-disposal`: When the user deletes a dataset, the system shall delete all related data, including indexes, analysis results, and cached AI output.
 - `DI-storage-visibility`: The system shall show how much disk space its data uses.
-- `DI-identifiable-people`: The data includes examiner names, which identify real people. No business rule yet covers how they may be used in published content (TBD: ask the client).
+- `DI-identifiable-people`: The data identifies each examiner by employee number (`examinerEmployeeNumber`), which identifies a real person. No business rule yet covers how examiner-level figures may be used in published content (TBD, `OI-9`).
 
 ---
 
@@ -336,9 +360,9 @@ _[Where the data comes from, how it is kept correct, how long it is kept, and ho
 
 _[The user-facing surfaces, at requirement level: which views exist, standards they must conform to, accessibility requirements. Link to wireframes or prototypes rather than describing pixel layouts.]_
 
-- `UI-main-views`: The application shall provide these views: Import, Weekly Overview, Art Units, Trends, Patent History, Sources (`FEAT-Verify-Source`), AI Assistant, Export, and Settings.
+- `UI-main-views`: The application shall provide these views: Import, Weekly Overview, Art Units, Trends, Patent History, Sources (`FEAT-Verify-Source`), AI Assistant, Export, and Settings. *Deferred:* the AI Assistant view (`KD-no-ai-in-mvp`) and the cross-dataset parts of Patent History (`FEAT-Link-Datasets`, out of scope).
 - `UI-drag-and-drop`: The Import view shall accept files by drag and drop (`FEAT-Intake-Data`).
-- `UI-wireframes`: Wireframes: link TBD.
+- `UI-wireframes`: Wireframes: link TBD (`OI-18`).
 
 ### 8.2 Hardware interfaces
 
@@ -350,15 +374,15 @@ None.
 
 _[Other software systems yours connects to: what crosses the boundary, in which direction, in what format, and what happens when the other side is unavailable.]_
 
-- `SI-uspto-bulk-files`: The system reads USPTO weekly ZIP files and bulk datasets that the client downloads. Data flows into the system only. File format TBD (`DE-client-sample-data`).
-- `SI-uspto-api`: Optionally, the system receives data from the USPTO Open Data Portal over HTTPS, using the client's API key. Data flows into the system only. If the API is unavailable, see `ROB-api-failure`.
-- `SI-local-ai-runtime`: The system sends prompts to a local AI runtime on the same computer and receives text back. Nothing leaves the computer.
+- `SI-uspto-bulk-files`: The system reads USPTO weekly bulk files that the client downloads. Data flows into the system only. The format received so far is one JSON record per office action, one per line (section 7.2). Whether ZIP or XML forms must also be accepted is open (`OI-6`, `OI-14`).
+- `SI-uspto-api`: Optionally, the system receives data from the USPTO Open Data Portal over HTTPS, using the client's API key. Data flows into the system only. If the API is unavailable, see `ROB-api-failure`. *Deferred:* not in release 1.0 (`CO-bulk-data-first`).
+- `SI-local-ai-runtime`: The system sends prompts to a local AI runtime on the same computer and receives text back. Nothing leaves the computer. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
 
 ### 8.4 API document
 
 _[Link to your API documentation. It is generated from the code, so link it rather than transcribing endpoints that will be stale within a week.]_
 
-TBD: link once the code exists.
+The system has no network API. Its internal interfaces are the public functions of each component, documented in their docstrings ([architecture-of-record 8.2.3](../design/architectural-design.md#82-other-concepts)); per-area contracts are in each design-of-record under `docs/design/`. Link to generated documentation here once code exists.
 
 ### 8.5 Communications interfaces
 
@@ -386,21 +410,21 @@ _Example: `USE-wcag-aa`: All user-facing views shall conform to WCAG 2.1 level A
 
 - `USE-zero-config`: The client shall be able to install the application, import a weekly file, and view the Weekly Overview without using a terminal or editing configuration files.
   *Test:* On a clean Mac, a tester follows only on-screen steps. Any terminal or configuration step is a failure.
-- `USE-weekly-data-time`: The client's hands-on time to go from a new weekly release to exported charts shall be under 1 hour (TBD target). Baseline: 4–6 hours by hand, from the client interview (`BO-Post-Visuals`).
+- `USE-weekly-data-time`: The client's hands-on time to go from a new weekly release to exported charts shall be under 1 hour (TBD target, `OI-13`). Baseline: 4–6 hours by hand, from the client interview (`BO-Post-Visuals`).
   *Test:* Time the client doing it with a real weekly release, not counting unattended processing.
 - `USE-progress`: For any task longer than a few seconds, the application shall show a progress indicator.
-- `USE-accessibility`: No formal accessibility standard is required, because the client is the only user (TBD: confirm).
+- `USE-accessibility`: No formal accessibility standard is required, because the client is the only user (TBD: confirm, `OI-16`).
 
 ### 9.2 Performance
 
 _Example: `PER-report-load`: A peer evaluation report for a section of 80 students shall render within 2 seconds at the 95th percentile._
 The client said speed is not critical (`AS-speed-not-critical`), so these targets are deliberately loose.
 
-- `PER-weekly-processing`: The application shall finish processing one weekly release (up to 50 GB) unattended, within 8 hours, for example overnight (TBD).
+- `PER-weekly-processing`: The application shall finish processing one weekly release (up to 50 GB) unattended, within 8 hours, for example overnight (TBD, `OI-13`).
 - `PER-incremental`: When a new weekly file is added, the application shall process only the new file, not the data already imported.
   *Test:* Adding one week to a dataset takes no longer than processing that week alone.
-- `PER-dashboard`: After processing, charts shall update within 5 seconds when filters change (TBD).
-- `PER-ai-response`: The AI assistant shall begin showing an answer within 60 seconds (TBD).
+- `PER-dashboard`: After processing, charts shall update within 5 seconds when filters change (TBD, `OI-13`).
+- `PER-ai-response`: The AI assistant shall begin showing an answer within 60 seconds (TBD). *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
 
 ### 9.3 Security
 
@@ -422,7 +446,7 @@ Not "not applicable": the client publishes this content to an audience that incl
 
 - `SAF-evidence-required`: The application shall not present any conclusion that cannot be traced to the underlying data (`BR-evidence-based-analysis`, `BR-data-driven-insights`, `SM-Accuracy`).
   *Test:* For every chart and AI statement in a test report, follow the source link and confirm the data supports it.
-- `SAF-ai-grounding`: AI-generated text shall be labeled as AI-generated, cite its data, and pass `FR-VERIFY-ai-claims` before it can be exported as verified.
+- `SAF-ai-grounding`: AI-generated text shall be labeled as AI-generated, cite its data, and pass `FR-VERIFY-ai-claims` before it can be exported as verified. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
 - `SAF-no-accusation`: Where anomaly detection is included, the application shall label unusual patterns as anomalies for human review, never as fraud, and shall show the evidence for each one.
 
 ### 9.5 Availability
@@ -441,8 +465,8 @@ The client's non-negotiable requirement is that the application "doesn't break w
   *Test:* Import a set containing one corrupt file. The rest import, and the corrupt file is reported.
 - `ROB-format-change`: If a new release has a structure different from previous releases, the application shall report the difference and shall not produce charts from fields it could not read.
 - `ROB-resume`: If processing is interrupted, the application shall resume from the last completed file without duplicating data.
-- `ROB-low-resources`: If the computer cannot run the selected AI model, the application shall switch to a smaller model or say which AI features are unavailable, without crashing.
-- `ROB-api-failure`: If a USPTO API request fails, the application shall keep retrying for at least 5 minutes (`DE-uspto-api-outages`), then report the error and keep the data already downloaded.
+- `ROB-low-resources`: If the computer cannot run the selected AI model, the application shall switch to a smaller model or say which AI features are unavailable, without crashing. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
+- `ROB-api-failure`: If a USPTO API request fails, the application shall keep retrying for at least 5 minutes (`DE-uspto-api-outages`), then report the error and keep the data already downloaded. *Deferred:* the API is not used in release 1.0 (`CO-bulk-data-first`).
 
 ### 9.7 Scalability, interoperability, maintainability
 
@@ -451,9 +475,9 @@ _[Add the ones that apply, with `SCA-`, `INT-`, and `MNT-` identifiers. Maintain
 - `SCA-weekly-volume`: The application shall handle weekly releases of up to 50 GB per ZIP file and up to 100 GB of processing per week (client interview).
 - `SCA-prosecution-history`: The application shall handle at least 4 years of office action data while meeting `PER-dashboard` (`BR-prosecution-history-window`).
 - `SCA-litigation-history`: The application shall handle at least 21 years of litigation data (`BR-litigation-history-window`).
-- `SCA-storage-limit`: All stored data for the histories above shall fit within the free space on the client's 2 TB drive (TBD: how much space he can give the app).
-- `INT-export`: The application shall export charts as PNG images sized for LinkedIn posts (`BO-Post-Visuals`). Other formats (SVG, PDF, CSV) are TBD. Each export shall include a title, data source, and date.
-- `MNT-model-swap`: The client shall be able to change the AI model in Settings, with no code changes.
+- `SCA-storage-limit`: All stored data for the histories above shall fit within the free space on the client's 2 TB drive (TBD: how much space he can give the app, `OI-11`).
+- `INT-export`: The application shall export charts as PNG images sized for LinkedIn posts (`BO-Post-Visuals`). Other formats (SVG, PDF, CSV) are TBD (`OI-2`). Each export shall include a title, data source, and date.
+- `MNT-model-swap`: The client shall be able to change the AI model in Settings, with no code changes. *Deferred:* no AI in release 1.0 (`KD-no-ai-in-mvp`).
 - `MNT-layer-tests`: Each layer shall have automated tests that run independently of the other layers.
 - `MNT-user-guide`: The team shall provide a user guide written for a non-programmer that covers installing, updating, importing data, and changing the AI model.
 - `MNT-developer-readme`: The repository shall include a README explaining how to build and run the application from source.
@@ -476,7 +500,7 @@ Release 1.0 supports a single locale: US English with USPTO data only (`BR-uspto
 _[Anything real that fits nowhere above: legal, licensing, installation, training, documentation. Delete this section if it is empty rather than leaving it as a placeholder.]_
 
 - **Licensing:** The application shall include a notice listing the licenses of all bundled open-source software and AI models.
-- **Installation:** The application shall install as a single desktop app. Whether it is code-signed is TBD: signing requires paid developer accounts, which conflicts with `CO-zero-recurring-cost`.
+- **Installation:** The application shall install as a single desktop app. Whether it is code-signed is TBD (`OI-12`): signing requires a paid Apple developer account, which conflicts with `CO-zero-recurring-cost`.
 - **Disclaimer:** Exported reports shall state that they are independent analysis of public USPTO data, not official USPTO statements.
 
 ---
