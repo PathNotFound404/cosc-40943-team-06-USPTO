@@ -1,0 +1,2 @@
+# Test fixtures are data: keep them byte for byte on every platform.
+tests/fixtures/*.jsonl -text

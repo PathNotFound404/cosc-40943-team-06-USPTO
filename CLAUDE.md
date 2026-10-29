@@ -34,7 +34,7 @@ A single-user macOS desktop application for Malachi Hernandez. It imports the US
 
 These were decided in [architecture section 9.2](docs/design/architectural-design.md#92-key-decisions). Do not substitute alternatives.
 
-- Python 3.12, with `pip` and a virtual environment (`requirements.txt`)
+- Python 3.14, with `pip` and a virtual environment (`requirements.txt`)
 - PySide6 for the user interface; matplotlib for charts (`KD-ui-framework`)
 - DuckDB as one local database file, opened in-process, with a pinned version (`KD-embedded-duckdb`)
 - `pytest` for tests; `ruff` for linting and formatting
@@ -43,14 +43,18 @@ These were decided in [architecture section 9.2](docs/design/architectural-desig
 
 ## Commands
 
-There is no code yet. The first slice creates `requirements.txt` and the package layout; update this section when it does.
+Code is in `src/patent_intelligence/`, one package per component; tests mirror it under `tests/`. Tool settings are in `pyproject.toml`.
 
 ```sh
-python3.12 -m venv .venv
+python3.14 -m venv .venv          # Windows: py -3.14 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ruff format . && ruff check .
 pytest
+
+# Run the app from source with a development data folder (architecture 8.2.6)
+export PATENT_INTELLIGENCE_DATA=./data            # Windows: $env:PATENT_INTELLIGENCE_DATA = ".\data"
+PYTHONPATH=src python -m patent_intelligence.app  # Windows: $env:PYTHONPATH = "src", then the python line
 ```
 
 ## Conventions
