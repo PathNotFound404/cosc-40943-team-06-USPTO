@@ -83,7 +83,7 @@ Package root: `src/patent_intelligence/`, one package per component ([8.2.4](arc
 - `storage/database.py` (new): opens the one DuckDB connection, sets the memory limit and spill folder from available memory, hands out cursors and transactions. The only module that imports `duckdb` connection functions ([8.2.3](architectural-design.md#82-other-concepts)).
 - `storage/migrations/001_raw_tables.sql` (new): the tables in [Data model](#data-model). `storage/migrate.py` (new) applies numbered scripts on start-up ([8.2.8](architectural-design.md#82-other-concepts)).
 - `jobs/runner.py` (new): `JobRunner`, one background thread, one job at a time, with Qt signals for progress, finished, and failed (`USE-progress`).
-- `jobs/import_job.py` (new): runs `import_file`, then `build_staged_dataset`, for one file. Built with `UC-FEAT-decompile-files` it runs `import_file` only; `UC-FEAT-clean-data` adds the second call.
+- `jobs/import_job.py` (new): runs `import_file`, then `build_staged_dataset`, for one file. Built with `UC-FEAT-decompile-files` it runs `import_file` only; `UC-FEAT-clean-data` adds the second call. It returns an `ImportJobResult` holding both outcomes, because the import is committed before cleaning starts: a cleaning failure is shown after the import notice, not instead of it. A file already imported is not cleaned again, since nothing new was stored (decided by the developer during the build, 2026-10-29).
 - `errors.py` (new): `AppError`, the base of every component's exceptions, with a plain-English `message` for the UI ([8.2.1](architectural-design.md#82-other-concepts)).
 - `settings.py` (new): the data folder, from `~/Library/Application Support` in production or an environment variable in development ([8.2.6](architectural-design.md#82-other-concepts)).
 - `logging_setup.py` (new): the rotating log file of [8.2.7](architectural-design.md#82-other-concepts).
@@ -190,7 +190,8 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Th
 | Function or job | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
 | `ingestion.import_file` | `ImportJob` only, on the Job Runner thread; never the UI thread | Storage handle, file path, import time (passed in, [8.2.2](architectural-design.md#82-other-concepts)), progress callback | `ImportSummary`: import ID, file name, records loaded, records rejected, rejected count per reason, and `already_imported` true when the content hash matched (nothing written) | 3a: `UnsupportedFileError` (not a known layout) or `LayoutMismatchError` naming the missing and unexpected fields. 4a: `UnreadableFileError` with the first bad line number. 5a: not an error; the counts are in the summary. |
-| `cleaning.build_staged_dataset` | `ImportJob` only, after a successful import | None | `StagedSummary`: office actions staged, rejection entries staged | 1a: `NoRawDataError`. 2a: `CleaningFailedError`. 3a: `MissingColumnsError` naming the columns. |
+| `cleaning.build_staged_dataset` | `ImportJob` only, after an import that stored a new file | Storage handle ([8.2.3](architectural-design.md#82-other-concepts)) | `StagedSummary`: office actions staged, rejection entries staged | 1a: `NoRawDataError`. 2a: `CleaningFailedError`. 3a: `MissingColumnsError` naming the columns (as `view.column`). |
+| `jobs.ImportJob.run` | `JobRunner` only | Progress callback | `ImportJobResult`: the `ImportSummary`, and either a `StagedSummary` or the cleaning `AppError`; neither when the file was already imported | Import errors (3a, 4a of `UC-FEAT-decompile-files`) are raised as before; cleaning errors are returned in the result so the import notice is still shown. |
 | `jobs.JobRunner.submit` | The UI | A job object | Signals: `progress(fraction, message)`, `finished(result)`, `failed(AppError)` | A second job submitted while one runs waits its turn ([8.2.8](architectural-design.md#82-other-concepts)). |
 | `storage.open` | `app.py` at start-up only | Data folder | A database handle; pending migrations applied | Folder not writable: `AppError` shown at start-up. |
 
@@ -278,7 +279,9 @@ erDiagram
 - `raw_office_action` has one column per field in [SRS 7.2](../requirements/software-requirements-specification.md#72-data-dictionary), including `oaText` and the fields no chart uses. It is append-only ([8.2.8](architectural-design.md#82-other-concepts)).
 - `rejected_record.raw_line` keeps the record as it was so it can be inspected later. It may contain letter text, so it is never logged.
 - `work_group` and `technology_center` are read from the source fields, never derived from the art unit (22 sample records differ, SRS 7.2).
-- A record whose rejection entry has no type keeps it in `staged_rejection` with an empty `rejection_type`; nothing is dropped (`OI-5`).
+- A record whose rejection entry has no type keeps it in `staged_rejection` with an empty (NULL) `rejection_type`; nothing is dropped or filled in (`OI-5`).
+- The required columns checked in step 3 are the columns of the two staged views in the diagram above (`REQUIRED_COLUMNS` in `cleaning/staging.py`).
+- `submission_date` and `filing_date` are UTC timestamps, as SRS 7.2 types them; a value that does not parse is left empty. Architecture 8.2.2 says the filing date is stored as a date; see Open questions.
 - `staged_office_action` has one row per `id` (duplicate records, above). The copy chosen has the latest `systemLastModifiedTimestamp`. A copy whose timestamp is missing or does not parse counts as the oldest. On a tie, the later import wins, then the later line. `staged_rejection` takes its rows from the chosen copy only.
 
 ## Reuse & cross-cutting
@@ -316,6 +319,10 @@ Fixtures are small files cut from the sample under `tests/fixtures/` ([8.2.10](a
 | UC-FEAT-clean-data 3a | unit | When a required column is absent from the staged view, `MissingColumnsError` names it and nothing is staged |
 | UC-FEAT-clean-data null handling | unit | A rejection entry with no type appears in the staged rejections with an empty type; the work group is the source value even when it differs from the art unit's first three digits |
 | UC-FEAT-clean-data duplicate records | unit | With three copies of one `id` (an older timestamp, a newer one, and a missing one), the staged views hold only the newer copy and its rejection entries; with equal timestamps, the later import's copy |
+| UC-FEAT-clean-data trigger | integration | A finished import is cleaned in the same job; an already-imported file is not cleaned again (added during the build) |
+| UC-FEAT-clean-data 1a, 2a after an import | integration | A file whose records are all rejected reports no data to clean; a failed cleaning run keeps the import and reports both (added during the build) |
+| UC-FEAT-clean-data notice | unit (UI) | After the import notice, the view says ready for charts with the counts, or shows the cleaning error's message (step 4, 1a1, 2a2, 3a1; added during the build) |
+| UC-FEAT-clean-data logging | unit | The cleaning run logs counts and no record, letter text, or examiner number ([8.2.7](architectural-design.md#82-other-concepts); added during the build) |
 
 ## Changes to the architecture-of-record
 
@@ -333,6 +340,8 @@ _[What this design could not settle and who can, and what could go wrong that yo
 - **The use case has no "already imported" extension.** Propose adding `3b. The file has already been imported` to `UC-FEAT-decompile-files`.
 - **Null handling (`OI-5`).** This design removes nothing: records missing a required field are rejected at import with a reason, and optional fields stay empty in the staged views. That replaces "removes null values" in `UC-FEAT-clean-data` step 2; the use case's wording should change if the client agrees.
 - **Column names (`OI-4`)** are proposed as the glossary terms in snake_case.
+- **Filing date type.** Architecture 8.2.2 says "dates such as the filing date are stored as dates"; SRS 7.2 types it as a UTC timestamp and the sample supplies one. The staged view follows SRS 7.2. Propose changing 8.2.2 to "filing dates are UTC timestamps as supplied, displayed as YYYY-MM-DD".
+- **Staged views read the raw tables live.** Because the staged dataset is views, records committed by an import are visible through the previous views even if the following cleaning run fails (2a, 3a). The previous view definitions are kept, as 2a1 requires, but "not ready for charts" means "not re-checked", not "invisible". Found during the build.
 - **Use case wording.** "Decompile" and "usable file of data" describe ZIP extraction; the sample is a plain JSON lines file. The use case keeps its identifier; its steps could be reworded to "read" and "store".
 - **Package name** `patent_intelligence` is proposed, not decided.
 - **Risk accepted:** a 50 GB file is one transaction, so an interruption near the end loses hours of work (`RISK-large-file-memory`). The alternative, committing in batches, breaks "nothing from a bad file is kept".
