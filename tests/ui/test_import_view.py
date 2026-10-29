@@ -89,7 +89,7 @@ def test_after_the_import_notice_the_view_says_the_data_is_ready_for_charts(view
     wait_until(lambda: import_view.notices.count() == 2)
     assert notices(import_view) == [
         "week.json imported: 20 records loaded, 0 rejected.",
-        "Ready for charts: 20 office actions and 20 rejections staged.",
+        "Ready for charts: 20 office actions staged.",
     ]
 
 
@@ -137,10 +137,10 @@ def test_several_files_import_in_order_and_a_bad_one_is_reported_and_skipped(
 
     shown = notices(import_view)
     assert shown[0] == "office_actions_20.jsonl imported: 20 records loaded, 0 rejected."
-    assert shown[1] == "Ready for charts: 20 office actions and 20 rejections staged."
+    assert shown[1] == "Ready for charts: 20 office actions staged."
     assert shown[2].startswith("truncated.jsonl could not be read: line 20")
     assert shown[3] == "third.jsonl imported: 20 records loaded, 0 rejected."
-    assert shown[4] == "Ready for charts: 40 office actions and 40 rejections staged."
+    assert shown[4] == "Ready for charts: 40 office actions staged."
     assert counts(database) == {"import_log": 2, "raw_office_action": 40, "rejected_record": 0}
     stored_files = database.cursor().execute("SELECT file_name FROM import_log").fetchall()
     assert ("truncated.jsonl",) not in stored_files

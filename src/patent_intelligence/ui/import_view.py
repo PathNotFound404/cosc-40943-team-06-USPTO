@@ -116,8 +116,8 @@ def cleaning_notice(result: ImportJobResult) -> str | None:
         return result.cleaning_error.message
     if result.staged_summary is None:
         return None
-    staged = result.staged_summary
+    # Rejections are left out: next to the import notice's rejected records they read as the
+    # same thing.
     return (
-        f"Ready for charts: {staged.office_actions_staged:,} office actions and "
-        f"{staged.rejections_staged:,} rejections staged."
+        f"Ready for charts: {result.staged_summary.office_actions_staged:,} office actions staged."
     )
