@@ -208,7 +208,9 @@ _A decision that affects the whole system rather than this area is an architectu
 
 **How the raw tables store a record.** Each field is stored as the text the file gave, with `rejections` and `sections` kept as JSON, plus the import ID and line number. Typing (dates, integers) happens in the staged views. Rejected: typed raw columns. A value that fails to convert would then have to be coerced or dropped at load time, and either one changes a raw value (`BR-no-data-alteration`).
 
-**How duplicates are prevented.** By a SHA-256 hash of the whole file, checked before anything is written. A file whose hash is already in the import log is reported as already imported. Rejected: comparing file names, since the USPTO's names are not guaranteed unique and a renamed copy would be imported twice. What happens when two *different* files share a record `id` is not settled (see Open questions).
+**How duplicates are prevented.** By a SHA-256 hash of the whole file, checked before anything is written. A file whose hash is already in the import log is reported as already imported. Rejected: comparing file names, since the USPTO's names are not guaranteed unique and a renamed copy would be imported twice.
+
+**Duplicate records: the same `id` in another file or line.** A valid record whose `id` is already stored, or appears on an earlier line of the same file, is a duplicate record. Each import counts them (`ImportSummary.duplicate_records`, shown in the notice and the log) but stores every copy, because raw tables are append-only (8.2.8) and a later copy may be a USPTO revision (`BR-no-data-alteration`). The staged dataset keeps one copy per `id`: the newest, defined in the `UC-FEAT-clean-data` data model below. Rejected: skipping later copies at import, which would lose revisions; and storing a duplicate as a rejected record, which would mix "bad record" with "already have it". Decided by the developer, 2026-10-29; the client confirms in `OI-19`.
 
 **The staged dataset is views, not tables.** Cleaning replaces two views over the raw tables: one row per office action, and one row per rejection entry. Rebuilding them is fast and cannot lose data, and their column names are the glossary's terms in snake_case. Rejected: copying cleaned rows into staged tables, which doubles storage for no gain until a cleaning rule needs to be expensive (`RISK-storage-growth`; `KD-raw-and-staged` prefers views).
 
@@ -277,6 +279,7 @@ erDiagram
 - `rejected_record.raw_line` keeps the record as it was so it can be inspected later. It may contain letter text, so it is never logged.
 - `work_group` and `technology_center` are read from the source fields, never derived from the art unit (22 sample records differ, SRS 7.2).
 - A record whose rejection entry has no type keeps it in `staged_rejection` with an empty `rejection_type`; nothing is dropped (`OI-5`).
+- `staged_office_action` has one row per `id` (duplicate records, above). The copy chosen has the latest `systemLastModifiedTimestamp`. A copy whose timestamp is missing or does not parse counts as the oldest. On a tie, the later import wins, then the later line. `staged_rejection` takes its rows from the chosen copy only.
 
 ## Reuse & cross-cutting
 
@@ -300,6 +303,9 @@ Fixtures are small files cut from the sample under `tests/fixtures/` ([8.2.10](a
 | UC-FEAT-decompile-files 4a | integration | A fixture truncated mid-line raises `UnreadableFileError` with the line number, and no raw or rejected rows and no import log entry remain (`QS-corrupt-file-reported`) |
 | UC-FEAT-decompile-files 5a | integration | A fixture with 2 records lacking `groupArtUnitNumber` and 1 with a five-digit art unit loads the rest, stores 3 rejected records with reasons, and loaded plus rejected equals the lines in the file |
 | UC-FEAT-decompile-files duplicate | integration | Importing the same fixture twice reports already imported and the raw row count is unchanged (`DI-no-duplicates`) |
+| UC-FEAT-decompile-files duplicate records | integration | A second file with 3 ids already stored (one revised) loads 20 and counts 3 duplicates; both copies of each are stored unchanged; the log has the count and no ids |
+| UC-FEAT-decompile-files duplicate records | integration | An id repeated on two lines of one file counts 1 duplicate and both lines are stored; a rejected record is never counted as a duplicate |
+| UC-FEAT-decompile-files duplicate records | unit (UI) | The notice names the duplicate count when there are some and says nothing when there are none |
 | UC-FEAT-decompile-files several files | integration | Three files with the middle one truncated: the first and third import, the second is reported, nothing of it is stored (`ROB-bad-input`) |
 | UC-FEAT-decompile-files interrupted | integration | Stopping an import before commit leaves the database as it was, and importing the file again succeeds (`ROB-resume`, `QS-interrupted-import-resumes`) |
 | UC-FEAT-decompile-files notice | unit (UI) | The completion notice shows loaded and rejected counts, and a failure shows the error's message with no stack trace (`FR-TASK-completion-notice`) |
@@ -309,6 +315,7 @@ Fixtures are small files cut from the sample under `tests/fixtures/` ([8.2.10](a
 | UC-FEAT-clean-data 2a | unit | A forced failure while replacing the views leaves the previous staged views and the raw tables unchanged and raises `CleaningFailedError` |
 | UC-FEAT-clean-data 3a | unit | When a required column is absent from the staged view, `MissingColumnsError` names it and nothing is staged |
 | UC-FEAT-clean-data null handling | unit | A rejection entry with no type appears in the staged rejections with an empty type; the work group is the source value even when it differs from the art unit's first three digits |
+| UC-FEAT-clean-data duplicate records | unit | With three copies of one `id` (an older timestamp, a newer one, and a missing one), the staged views hold only the newer copy and its rejection entries; with equal timestamps, the later import's copy |
 
 ## Changes to the architecture-of-record
 
@@ -322,7 +329,7 @@ _[What this design could not settle and who can, and what could go wrong that yo
 
 - **Only JSON lines is supported.** ZIP and XML wait on `OI-6` and `OI-14`. Adding one is a new reader in `readers.py`.
 - **An extra field refuses the file.** Architecture section 6 refuses a file whose fields differ in either direction, so a new USPTO field blocks the import until someone updates `layout.py`. The safer-for-the-client alternative is to accept extra fields, store them, and warn. Team decision; the architecture's runtime view changes if it is reversed.
-- **The same record `id` in two different files.** Hashing stops the same file twice, but not overlapping weeks. Options: skip records whose `id` is already stored (and report them as a third count), or store both and let the staged view keep one. Neither is in a use case or business rule; ask the team, and the client if weeks can overlap (`DI-no-duplicates`).
+- **The same record `id` in two different files.** Decided 2026-10-29 (see Key decisions, duplicate records); the client confirms in `OI-19`. `DI-no-duplicates` says "store each record only once", which no longer matches: propose "The staged dataset shall contain each record once; the raw records keep every copy imported." The use case could gain `5b. A record's id is already stored`.
 - **The use case has no "already imported" extension.** Propose adding `3b. The file has already been imported` to `UC-FEAT-decompile-files`.
 - **Null handling (`OI-5`).** This design removes nothing: records missing a required field are rejected at import with a reason, and optional fields stay empty in the staged views. That replaces "removes null values" in `UC-FEAT-clean-data` step 2; the use case's wording should change if the client agrees.
 - **Column names (`OI-4`)** are proposed as the glossary terms in snake_case.
