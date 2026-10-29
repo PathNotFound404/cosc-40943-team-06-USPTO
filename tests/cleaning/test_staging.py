@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -263,3 +264,20 @@ def test_on_equal_timestamps_the_later_import_then_the_later_line_is_staged(
 
     assert chosen(database, first["id"]) == ([("LATER IMPORT",)], [("103",)])
     assert chosen(database, second["id"]) == ([("LAST",)], [("112",)])
+
+
+# --- Logging (architecture 8.2.7) ---------------------------------------------------------
+
+
+def test_the_log_has_the_counts_and_no_records_or_examiner_numbers(
+    database, caplog: pytest.LogCaptureFixture
+) -> None:
+    import_file(database, FIXTURE, IMPORT_TIME, no_progress)
+    with caplog.at_level(logging.INFO):
+        build_staged_dataset(database)
+
+    assert "Built the staged dataset: 20 office actions, 20 rejections" in caplog.text
+    for record in fixture_records():
+        assert record["id"] not in caplog.text
+        assert record["examinerEmployeeNumber"] not in caplog.text
+        assert record["oaText"][:60] not in caplog.text
