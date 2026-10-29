@@ -237,6 +237,72 @@ def test_importing_the_same_file_twice_reports_already_imported(database, tmp_pa
     assert counts(database) == {"import_log": 1, "raw_office_action": 20, "rejected_record": 0}
 
 
+# --- Duplicate records: the same id in another file or line (DI-no-duplicates) -----------
+
+
+def test_records_whose_id_is_already_stored_are_counted_and_every_copy_kept(
+    database, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    import_file(database, FIXTURE, IMPORT_TIME, no_progress)
+    records = fixture_records()
+    for record in records[3:]:
+        record["id"] += "-next-week"
+    records[0]["systemLastModifiedTimestamp"] = "2026-10-25T09:00:00.000Z"
+    records[0]["oaText"] = "A revised letter."
+    path = write_records(tmp_path / "next_week.jsonl", records)
+
+    with caplog.at_level(logging.INFO):
+        summary = import_file(database, path, IMPORT_TIME, no_progress)
+
+    assert (summary.records_loaded, summary.duplicate_records) == (20, 3)
+    assert counts(database)["raw_office_action"] == 40
+    copies = (
+        database.cursor()
+        .execute(
+            "SELECT import_id, oaText FROM raw_office_action WHERE id = ? ORDER BY import_id",
+            [records[0]["id"]],
+        )
+        .fetchall()
+    )
+    assert [text for _, text in copies] == [fixture_records()[0]["oaText"], "A revised letter."]
+    assert "20 records loaded (3 duplicate records)" in caplog.text
+    for record in records[:3]:
+        assert record["id"] not in caplog.text
+
+
+def test_an_id_repeated_within_one_file_is_a_duplicate_and_both_lines_are_stored(
+    database, tmp_path: Path
+) -> None:
+    records = fixture_records()
+    records[7]["id"] = records[2]["id"]
+    path = write_records(tmp_path / "repeat.jsonl", records)
+    summary = import_file(database, path, IMPORT_TIME, no_progress)
+    assert (summary.records_loaded, summary.duplicate_records) == (20, 1)
+    stored = (
+        database.cursor()
+        .execute(
+            "SELECT line_number FROM raw_office_action WHERE id = ? ORDER BY line_number",
+            [records[2]["id"]],
+        )
+        .fetchall()
+    )
+    assert stored == [(3,), (8,)]
+
+
+def test_a_rejected_record_is_not_counted_as_a_duplicate(database, tmp_path: Path) -> None:
+    records = fixture_records()
+    records[7]["id"] = records[2]["id"]
+    del records[7]["groupArtUnitNumber"]
+    path = write_records(tmp_path / "rejected_repeat.jsonl", records)
+    summary = import_file(database, path, IMPORT_TIME, no_progress)
+    assert (summary.records_loaded, summary.records_rejected) == (19, 1)
+    assert summary.duplicate_records == 0
+
+
+def test_a_file_with_no_repeated_ids_has_no_duplicates(database) -> None:
+    assert import_file(database, FIXTURE, IMPORT_TIME, no_progress).duplicate_records == 0
+
+
 # --- Interrupted (ROB-resume, QS-interrupted-import-resumes) -----------------------------
 
 
@@ -298,7 +364,7 @@ def test_the_log_has_the_counts_and_no_letter_text_records_or_examiner_numbers(
     with caplog.at_level(logging.INFO):
         import_file(database, path, IMPORT_TIME, no_progress)
 
-    assert "19 records loaded, 1 rejected" in caplog.text
+    assert "19 records loaded (0 duplicate records), 1 rejected" in caplog.text
     assert "missing groupArtUnitNumber" in caplog.text
     for record in records:
         assert record["examinerEmployeeNumber"] not in caplog.text

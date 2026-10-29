@@ -99,4 +99,9 @@ def import_notice(summary: ImportSummary) -> str:
             f"{reason}: {count:,}" for reason, count in summary.rejected_by_reason.items()
         )
         notice += f" Rejected because of {reasons}."
+    if summary.duplicate_records:
+        notice += (
+            f" {summary.duplicate_records:,} of the loaded records have an id that was already "
+            "stored; charts use the newest copy."
+        )
     return notice

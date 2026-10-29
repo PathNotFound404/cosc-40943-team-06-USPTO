@@ -31,7 +31,11 @@ _CHECKED = "import_checked_line"
 
 @dataclass(frozen=True)
 class ImportSummary:
-    """The outcome of one import. `already_imported` means nothing was written."""
+    """The outcome of one import. `already_imported` means nothing was written.
+
+    `duplicate_records` counts the loaded records whose id was already stored or repeats in
+    the file; they are included in `records_loaded`.
+    """
 
     import_id: int
     file_name: str
@@ -39,6 +43,7 @@ class ImportSummary:
     records_rejected: int
     rejected_by_reason: dict[str, int] = field(default_factory=dict)
     already_imported: bool = False
+    duplicate_records: int = 0
 
 
 def import_file(
@@ -84,6 +89,7 @@ def import_file(
                 f"SELECT count(*) FILTER (reason = ''), count(*) FILTER (reason <> '') "
                 f"FROM {_CHECKED}"
             ).fetchone()
+            (duplicates,) = cursor.execute(_count_duplicate_records_sql()).fetchone()
 
             report_progress(0.7, f"Storing the records from {file_name}")
             (import_id,) = cursor.execute("SELECT nextval('import_id_sequence')").fetchone()
@@ -116,16 +122,19 @@ def import_file(
         cursor.close()
 
     log.info(
-        "Imported %s as import %d: %d records loaded, %d rejected",
+        "Imported %s as import %d: %d records loaded (%d duplicate records), %d rejected",
         file_name,
         import_id,
         loaded,
+        duplicates,
         rejected,
     )
     if rejected:
         log.warning("Rejected records in %s by reason: %s", file_name, rejected_by_reason)
     report_progress(1.0, f"Imported {file_name}")
-    return ImportSummary(import_id, file_name, loaded, rejected, rejected_by_reason)
+    return ImportSummary(
+        import_id, file_name, loaded, rejected, rejected_by_reason, duplicate_records=duplicates
+    )
 
 
 def _hash_file(path: Path, report_progress: ProgressCallback) -> str:
@@ -158,6 +167,22 @@ def _refuse_unexpected_fields(cursor: duckdb.DuckDBPyConnection, file_name: str)
     ).fetchall()
     if rows:
         raise LayoutMismatchError(file_name, [], [name for (name,) in rows])
+
+
+def _count_duplicate_records_sql() -> str:
+    """Valid records whose id is already stored or appears on an earlier line of this file.
+
+    Run before the insert. Every copy is still stored, since raw tables are append-only (8.2.8);
+    the staged dataset keeps the newest copy (docs/design/intake.md, duplicate records).
+    """
+    return (
+        "SELECT count(*) FROM ("
+        "SELECT ids[1] AS id, "
+        "row_number() OVER (PARTITION BY ids[1] ORDER BY line_number) AS copy "
+        f"FROM (SELECT line_number, {json_values_sql('line', ('id',))} AS ids "
+        f"FROM {_CHECKED} WHERE reason = '')"
+        ") WHERE copy > 1 OR id IN (SELECT id FROM raw_office_action)"
+    )
 
 
 def _insert_raw_records_sql() -> str:

@@ -39,6 +39,18 @@ def test_the_completion_notice_shows_records_loaded_and_rejected(view) -> None:
     ]
 
 
+def test_the_notice_names_duplicate_records_only_when_there_are_some(view) -> None:
+    import_view, runner, _ = view
+    runner.finished.emit(ImportSummary(1, "week.json", 20, 0, duplicate_records=3))
+    runner.finished.emit(ImportSummary(2, "other.json", 20, 0))
+    wait_until(lambda: import_view.notices.count() == 2)
+    assert notices(import_view) == [
+        "week.json imported: 20 records loaded, 0 rejected. 3 of the loaded records have an id "
+        "that was already stored; charts use the newest copy.",
+        "other.json imported: 20 records loaded, 0 rejected.",
+    ]
+
+
 def test_an_already_imported_file_says_nothing_changed(view) -> None:
     import_view, runner, _ = view
     runner.finished.emit(ImportSummary(1, "week.json", 0, 0, already_imported=True))
