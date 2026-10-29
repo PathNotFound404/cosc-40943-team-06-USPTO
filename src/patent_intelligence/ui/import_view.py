@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QLabel, QListWidget, QProgressBar, QVBoxLayout, QW
 
 from patent_intelligence.errors import AppError
 from patent_intelligence.ingestion import ImportSummary
-from patent_intelligence.jobs.import_job import ImportJob
+from patent_intelligence.jobs.import_job import ImportJob, ImportJobResult
 from patent_intelligence.jobs.runner import JobRunner
 from patent_intelligence.storage import Database
 
@@ -76,9 +76,11 @@ class ImportView(QWidget):
         self.progress_bar.setValue(round(fraction * 100))
         self.progress_label.setText(message)
 
-    def _show_finished(self, summary: object) -> None:
-        if isinstance(summary, ImportSummary):
-            self.notices.addItem(import_notice(summary))
+    def _show_finished(self, result: object) -> None:
+        if isinstance(result, ImportJobResult):
+            self.notices.addItem(import_notice(result.import_summary))
+            if notice := cleaning_notice(result):
+                self.notices.addItem(notice)
 
     def _show_failed(self, error: AppError) -> None:
         self.progress_label.setText("")
@@ -105,3 +107,17 @@ def import_notice(summary: ImportSummary) -> str:
             "stored; charts use the newest copy."
         )
     return notice
+
+
+def cleaning_notice(result: ImportJobResult) -> str | None:
+    """Ready for charts (UC-FEAT-clean-data step 4), or why not (1a1, 2a2, 3a1). None when
+    cleaning did not run because the file was already imported."""
+    if result.cleaning_error is not None:
+        return result.cleaning_error.message
+    if result.staged_summary is None:
+        return None
+    staged = result.staged_summary
+    return (
+        f"Ready for charts: {staged.office_actions_staged:,} office actions and "
+        f"{staged.rejections_staged:,} rejections staged."
+    )
