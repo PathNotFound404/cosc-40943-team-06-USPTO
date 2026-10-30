@@ -77,10 +77,11 @@ classDiagram
 - `analytics/metrics.py` (new): the metric registry. Each `Metric` has a name, a title, the field it counts (`FR-CHART-counted-field`), its parameters, and a **base query** that returns one row per counted item with its record ID and its category.
 - `analytics/service.py` (new): `list_metrics`, `run_metric`, `base_query`, and `technology_centers` (the choices for the Art Unit metric's parameter). Counts are `count(*)` grouped by category, and by category and series for a two-way metric, over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range).
 - `analytics/errors.py` (new): `StagedDataMissingError`, `MetricFailedError`.
-- `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure and the chart's identity (metric name, parameters, import IDs, counted field, date range). Every chart shows its counted field on screen.
+- `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure, the chart's identity (metric name, parameters, import IDs, counted field, date range), and each bar or segment as a `Bar` with its category and series. Every chart shows its counted field on screen. Categories are ordered largest first; a series value beyond the eight colors is a drawing failure (5a) rather than two series sharing a color.
 - `charts/export.py` (new): `find_conflicts` and `export_charts`. Adds the label block (title, data source, date range, generation date, counted field) and writes PNG.
 - `charts/errors.py` (new): `FolderNotWritableError`.
-- `ui/charts_view.py` (new): the metric chooser (steps 3 and 4) and one tab per chart (step 6); a click on a bar calls Provenance.
+- `ui/charts_view.py` (new): the Visualizations tab. `MetricChooser` lists every metric checked, with a Technology Center drop-down beside the Art Unit metric, starting at the first staged (steps 3 and 4). One tab per chart (step 6); a chart created again with the same metric and parameters replaces its tab. `ChartsView.charts` is the session's list of charts, which Export reads (step 7). A click on a bar or segment calls the drill-down hook with the chart, category, and series; `app.py` wires it to Provenance when `UC-FEAT-verify-source` is built, and until then bars are not selectable.
+- `jobs/cleaning_job.py` (new): `CleaningJob` runs `build_staged_dataset` on the Job Runner when the user chooses to clean from 2a2; the Import view shows its progress and result with the other jobs'.
 - `ui/export_view.py` (new): the list of charts open in this session, the folder picker, and the overwrite-or-keep-both question (5b1).
 - `storage` (reused from [intake.md](intake.md)): read cursors only; this area never writes to the database.
 
@@ -250,11 +251,11 @@ _[One row per flow: the main success scenario and **every** extension of every u
 | UC-FEAT-create-visuals 2a | unit | With no staged views, `list_metrics` raises `StagedDataMissingError` and the UI offers cleaning |
 | UC-FEAT-create-visuals 4a | unit (UI) | Cancelling the chooser creates no tabs and runs no query |
 | UC-FEAT-create-visuals 5a | unit | When one metric's query fails, the others are drawn, the failure is logged by metric name, and the failed metric is listed to the user |
-| UC-FEAT-create-visuals 6a | integration | Selecting a bar calls Provenance with the chart and category, and the records returned equal the bar's value (`QS-chart-traces-to-records`) |
+| UC-FEAT-create-visuals 6a | integration | Selecting a bar or segment calls the drill-down hook with the chart, category, and series, and the base query filtered to them returns the bar's value (`QS-chart-traces-to-records`). That Provenance displays those records (6a2) is tested with `UC-FEAT-verify-source` |
 | UC-FEAT-create-visuals two-way | integration | Each two-way metric's count per category and series equals the counts computed by hand for the fixture; the breakdown sums to the base query's rows, each category's shares sum to 100, and filtering the base query to one category and series returns that segment's count |
 | UC-FEAT-create-visuals two-way colors | unit | A series keeps its color when the counts change order, and a missing series is gray |
 | UC-FEAT-create-visuals no type | unit | A rejection entry with no type is its own bar, and the bars sum to the rejection entries staged |
-| UC-FEAT-create-visuals step 7 | unit (UI) | Every chart created in the session is listed in the Export view |
+| UC-FEAT-create-visuals step 7 | unit (UI) | Every chart created in the session is kept in the session list, and a chart created again replaces its entry. The Export view's listing of them is tested with `UC-FEAT-export-visuals` |
 | UC-FEAT-export-visuals main | integration | Exporting two charts to a temporary folder writes two PNG files, and each image's label contains the title, data source, date range, generation date (the value passed in), and counted field |
 | UC-FEAT-export-visuals 3a | unit (UI) | Cancelling writes no files |
 | UC-FEAT-export-visuals 4a | unit | A read-only folder raises `FolderNotWritableError` and no file is written |
