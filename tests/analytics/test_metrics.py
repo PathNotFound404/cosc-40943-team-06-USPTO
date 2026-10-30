@@ -11,7 +11,7 @@ from patent_intelligence.analytics import (
     technology_centers,
 )
 from patent_intelligence.analytics.errors import MetricFailedError, StagedDataMissingError
-from tests.analytics.conftest import EXPECTED_COUNTS
+from tests.analytics.conftest import EXPECTED_BREAKDOWN, EXPECTED_COUNTS
 from tests.ingestion.conftest import counts
 
 
@@ -66,6 +66,46 @@ def test_the_technology_centers_are_those_staged_in_order(staged_database) -> No
         "3700",
         "3900",
     ]
+
+
+# --- Two-way metrics -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", list(EXPECTED_BREAKDOWN))
+def test_each_two_way_metric_counts_each_category_and_series_as_counted_by_hand(
+    staged_database, name
+) -> None:
+    result = run_metric(staged_database, name, {})
+    breakdown = {(category, series): count for category, series, count in result.breakdown}
+    assert breakdown == EXPECTED_BREAKDOWN[name]
+    query, values = base_query(name, {})
+    (rows,) = staged_database.cursor().execute(f"SELECT count(*) FROM ({query})", values).fetchone()
+    assert sum(breakdown.values()) == result.total == rows
+
+
+@pytest.mark.parametrize("name", list(EXPECTED_BREAKDOWN))
+def test_the_base_query_filtered_to_a_segment_returns_that_segments_count(
+    staged_database, name
+) -> None:
+    result = run_metric(staged_database, name, {})
+    query, values = base_query(name, {})
+    cursor = staged_database.cursor()
+    for category, series, count in result.breakdown:
+        records = cursor.execute(
+            f"SELECT record_id FROM ({query}) WHERE category IS NOT DISTINCT FROM $category "
+            "AND series IS NOT DISTINCT FROM $series",
+            {**values, "category": category, "series": series},
+        ).fetchall()
+        assert len(records) == count, (category, series)
+
+
+def test_one_way_metrics_have_no_breakdown(staged_database) -> None:
+    assert run_metric(staged_database, "office-actions-by-document-code", {}).breakdown == ()
+
+
+def test_the_counted_field_of_a_two_way_metric_names_both_fields() -> None:
+    (metric,) = [m for m in METRICS if m.name == "rejections-by-technology-center-and-type"]
+    assert metric.counted_field == "USPTO rejection tag, by Technology Center"
 
 
 # --- No type in the source (BR-no-data-alteration) ------------------------------------

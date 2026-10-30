@@ -35,6 +35,43 @@ EXPECTED_COUNTS = {
         "3798": 1,
     },
 }
+# Each Technology Center's office actions; every fixture record has one rejection entry, so
+# its rejection entries too.
+_BY_TECHNOLOGY_CENTER = EXPECTED_COUNTS[("office-actions-by-technology-center", ())]
+EXPECTED_COUNTS[("rejections-by-technology-center-and-type", ())] = _BY_TECHNOLOGY_CENTER
+EXPECTED_COUNTS[("office-actions-by-technology-center-and-document-code", ())] = (
+    _BY_TECHNOLOGY_CENTER
+)
+
+# Two-way metrics: count per (Technology Center, series), counted by hand from the fixture.
+EXPECTED_BREAKDOWN = {
+    "rejections-by-technology-center-and-type": {
+        ("1600", "101"): 1,
+        ("1600", "103"): 3,
+        ("1600", "112"): 4,
+        ("1700", "103"): 1,
+        ("2600", "103"): 1,
+        ("2800", None): 1,
+        ("2900", "Other"): 1,
+        ("3600", "101"): 2,
+        ("3700", "102"): 1,
+        ("3700", "103"): 3,
+        ("3700", "112"): 1,
+        ("3900", "103"): 1,
+    },
+    "office-actions-by-technology-center-and-document-code": {
+        ("1600", "CTFR"): 4,
+        ("1600", "CTNF"): 4,
+        ("1700", "CTNF"): 1,
+        ("2600", "CTFR"): 1,
+        ("2800", "CTFR"): 1,
+        ("2900", "CTNF"): 1,
+        ("3600", "CTNF"): 2,
+        ("3700", "CTFR"): 3,
+        ("3700", "CTNF"): 2,
+        ("3900", "CTNF"): 1,
+    },
+}
 
 
 def staged(database) -> None:

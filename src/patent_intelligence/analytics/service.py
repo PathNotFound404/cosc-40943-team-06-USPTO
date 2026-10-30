@@ -18,8 +18,9 @@ _BY_NAME = {metric.name: metric for metric in METRICS}
 
 @dataclass(frozen=True)
 class MetricResult:
-    """One metric's counts and what they cover. A category of None is a value the source did
-    not give; it is counted, not dropped (BR-no-data-alteration)."""
+    """One metric's counts and what they cover. A category or series of None is a value the
+    source did not give; it is counted, not dropped (BR-no-data-alteration). `breakdown` is
+    set only for a two-way metric: the count per category and series."""
 
     metric: Metric
     parameters: Mapping[str, str]
@@ -27,6 +28,7 @@ class MetricResult:
     import_ids: tuple[int, ...]
     earliest_submission: date | None
     latest_submission: date | None
+    breakdown: tuple[tuple[str | None, str | None, int], ...] = ()
     total: int = field(init=False)
 
     def __post_init__(self) -> None:
@@ -94,6 +96,15 @@ def run_metric(database: Database, name: str, parameters: Mapping[str, str]) -> 
                 """,
                 values,
             ).fetchall()
+            breakdown = []
+            if _BY_NAME[name].series_field is not None:
+                breakdown = cursor.execute(
+                    f"""
+                    SELECT category, series, count(*) FROM ({query})
+                    GROUP BY category, series ORDER BY category NULLS LAST, series NULLS LAST
+                    """,
+                    values,
+                ).fetchall()
             import_ids, earliest, latest = cursor.execute(
                 f"""
                 SELECT list(DISTINCT import_id ORDER BY import_id),
@@ -114,6 +125,7 @@ def run_metric(database: Database, name: str, parameters: Mapping[str, str]) -> 
         tuple(import_ids or ()),
         earliest,
         latest,
+        tuple(breakdown),
     )
     log.info("Ran the metric %s: %d counted in %d categories", name, result.total, len(counts))
     return result
