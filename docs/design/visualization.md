@@ -75,12 +75,13 @@ classDiagram
 ```
 
 - `analytics/metrics.py` (new): the metric registry. Each `Metric` has a name, a title, the field it counts (`FR-CHART-counted-field`), its parameters, and a **base query** that returns one row per counted item with its record ID and its category.
-- `analytics/service.py` (new): `list_metrics` and `run_metric`. Counts are `count(*)` grouped by category over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range).
+- `analytics/service.py` (new): `list_metrics`, `run_metric`, `base_query`, and `technology_centers` (the choices for the Art Unit metric's parameter). Counts are `count(*)` grouped by category, and by category and series for a two-way metric, over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range).
 - `analytics/errors.py` (new): `StagedDataMissingError`, `MetricFailedError`.
-- `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure and the chart's identity (metric name, parameters, import IDs, counted field, date range). Every chart shows its counted field on screen.
+- `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure, the chart's identity (metric name, parameters, import IDs, counted field, date range), and each bar or segment as a `Bar` with its category and series. Every chart shows its counted field on screen. Categories are ordered largest first; a series value beyond the eight colors is a drawing failure (5a) rather than two series sharing a color.
 - `charts/export.py` (new): `find_conflicts` and `export_charts`. Adds the label block (title, data source, date range, generation date, counted field) and writes PNG.
 - `charts/errors.py` (new): `FolderNotWritableError`.
-- `ui/charts_view.py` (new): the metric chooser (steps 3 and 4) and one tab per chart (step 6); a click on a bar calls Provenance.
+- `ui/charts_view.py` (new): the Visualizations tab. `MetricChooser` lists every metric checked, with a Technology Center drop-down beside the Art Unit metric, starting at the first staged (steps 3 and 4). One tab per chart (step 6); a chart created again with the same metric and parameters replaces its tab. `ChartsView.charts` is the session's list of charts, which Export reads (step 7). A click on a bar or segment calls the drill-down hook with the chart, category, and series; `app.py` wires it to Provenance when `UC-FEAT-verify-source` is built, and until then bars are not selectable.
+- `jobs/cleaning_job.py` (new): `CleaningJob` runs `build_staged_dataset` on the Job Runner when the user chooses to clean from 2a2; the Import view shows its progress and result with the other jobs'.
 - `ui/export_view.py` (new): the list of charts open in this session, the folder picker, and the overwrite-or-keep-both question (5b1).
 - `storage` (reused from [intake.md](intake.md)): read cursors only; this area never writes to the database.
 
@@ -94,6 +95,13 @@ Each is one base query over the staged views. The names are the identifiers code
 | `office-actions-by-technology-center` | Office actions | Technology Center | Technology Center | Weekly USPTO Overview |
 | `rejections-by-type` | Rejection entries | USPTO rejection type (`101`, `102`, `103`, `112`, `DoublePatent`, `Other`, none given) | USPTO rejection tag | Rejection Distribution (`BR-rejection-distribution-metric`) |
 | `office-actions-by-art-unit` | Office actions, for one Technology Center chosen as a parameter | Art Unit | Art Unit | Art Unit Activity |
+
+**Two-way metrics** (added during the build at the developer's request, 2026-10-30, from the sample-file findings under [Open questions](#open-questions--risks); also pending `OI-1`). Each category is split by a second field, the **series**:
+
+| Metric | Counts | Category | Series | Counted field (shown on the chart) | Report it serves |
+|---|---|---|---|---|---|
+| `rejections-by-technology-center-and-type` | Rejection entries | Technology Center | USPTO rejection type, none given included | USPTO rejection tag, by Technology Center | Rejection Distribution (`BR-rejection-distribution-metric`) |
+| `office-actions-by-technology-center-and-document-code` | Office actions | Technology Center | Document code (the CTFR share is the final rejection share) | Document Code, by Technology Center | Weekly USPTO Overview |
 
 Not designed until the client answers: a rejection count from the letter text (`OI-7`), and any pendency metric (`OI-8`, `BR-pendency-trend-metric`). Each is one more row in the registry when it is answered.
 
@@ -190,10 +198,11 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 
 | Function | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
-| `analytics.list_metrics` | The UI | None | The metric registry: name, title, counted field, parameters | 2a: `StagedDataMissingError` when the staged views are missing or empty. |
-| `analytics.run_metric` | The UI, and Provenance (verification.md) | Metric name, parameter values | `MetricResult`: count per category, counted field, import IDs covered, earliest and latest submission date | 5a: `MetricFailedError` naming the metric. |
-| `analytics.base_query` | Provenance only | Metric name, parameter values | The base query and its parameters, so Provenance filters the same rows the chart counted (`KD-charts-from-sql`) | Unknown metric: `MetricFailedError`. |
-| `charts.draw` | The UI | `MetricResult` | `Chart`: figure plus identity (metric, parameters, import IDs, counted field, date range) | Drawing failure is a 5a failure for that metric. |
+| `analytics.list_metrics` | The UI | None | The metric registry: name, title, counted field, series field, parameters | 2a: `StagedDataMissingError` when the staged views are missing or empty. |
+| `analytics.technology_centers` | The UI (the Art Unit metric's parameter) | None | The Technology Centers staged, in order | None. |
+| `analytics.run_metric` | The UI, and Provenance (verification.md) | Metric name, parameter values | `MetricResult`: count per category, and for a two-way metric count per category and series (`breakdown`); counted field, import IDs covered, earliest and latest submission date | 5a: `MetricFailedError` naming the metric. |
+| `analytics.base_query` | Provenance only | Metric name, parameter values | The base query and its parameters, so Provenance filters the same rows the chart counted (`KD-charts-from-sql`). Rows: record ID, category, series (two-way metrics only), import ID, submission date | Unknown metric or wrong parameters: `MetricFailedError`. |
+| `charts.draw` | The UI | `MetricResult` | `Chart`: figure plus identity (metric, parameters, import IDs, counted field, date range), and each bar or segment with the category and series it shows | Drawing failure is a 5a failure for that metric. |
 | `charts.find_conflicts` | The Export view | Charts, folder | The file names that already exist | 4a: `FolderNotWritableError`. |
 | `charts.export_charts` | The Export view | Charts, folder, overwrite or keep-both decision per conflict, generation date (passed in, [8.2.2](architectural-design.md#82-other-concepts)) | `ExportSummary`: path of each saved file, and each chart that failed with its reason | 4a: `FolderNotWritableError`. 5a: per chart, in the summary, not raised. |
 
@@ -212,6 +221,10 @@ _A decision that affects the whole system rather than this area is an architectu
 **"Staged for export" means kept in the session.** Charts created in this session are held in memory, and the Export view lists them. Rejected: saving charts in the database, which adds a table and a lifecycle nobody asked for. Architecture section 7 already says charts on screen are lost on restart and recomputed.
 
 **The label is drawn into the image.** Title, data source (the USPTO weekly office action file names), date range, generation date, and counted field are drawn below the chart, so the label survives being copied into a post. Rejected: file metadata, which LinkedIn and Instagram strip.
+
+**A two-way metric is the same base query with a series column, drawn as 100% stacked bars.** Each Technology Center is one horizontal bar split into the shares of its series, with its total (n) beside its name; a segment shows its share where it fits, and selecting one drills down to that category and series. Rejected: stacking counts, where Technology Center 3900 (19 office actions in the sample) vanishes beside 3700 (1,402); grouped bars, which give 70 bars for 10 Technology Centers and 7 types; and a separate cross-tab query, which breaks the base-query decision above. Shares are computed from the counts on screen, not stored.
+
+**A series keeps its color from week to week.** Each two-way metric lists its known series values in a fixed order, and colors follow that order; a value not listed comes after them, and a value the source did not give is gray. Rejected: coloring by rank, which repaints a type when another type's count overtakes it.
 
 **One image size.** PNG, sized for a LinkedIn post (`INT-export`). The exact pixel size is not specified anywhere; see Open questions.
 
@@ -238,9 +251,11 @@ _[One row per flow: the main success scenario and **every** extension of every u
 | UC-FEAT-create-visuals 2a | unit | With no staged views, `list_metrics` raises `StagedDataMissingError` and the UI offers cleaning |
 | UC-FEAT-create-visuals 4a | unit (UI) | Cancelling the chooser creates no tabs and runs no query |
 | UC-FEAT-create-visuals 5a | unit | When one metric's query fails, the others are drawn, the failure is logged by metric name, and the failed metric is listed to the user |
-| UC-FEAT-create-visuals 6a | integration | Selecting a bar calls Provenance with the chart and category, and the records returned equal the bar's value (`QS-chart-traces-to-records`) |
+| UC-FEAT-create-visuals 6a | integration | Selecting a bar or segment calls the drill-down hook with the chart, category, and series, and the base query filtered to them returns the bar's value (`QS-chart-traces-to-records`). That Provenance displays those records (6a2) is tested with `UC-FEAT-verify-source` |
+| UC-FEAT-create-visuals two-way | integration | Each two-way metric's count per category and series equals the counts computed by hand for the fixture; the breakdown sums to the base query's rows, each category's shares sum to 100, and filtering the base query to one category and series returns that segment's count |
+| UC-FEAT-create-visuals two-way colors | unit | A series keeps its color when the counts change order, and a missing series is gray |
 | UC-FEAT-create-visuals no type | unit | A rejection entry with no type is its own bar, and the bars sum to the rejection entries staged |
-| UC-FEAT-create-visuals step 7 | unit (UI) | Every chart created in the session is listed in the Export view |
+| UC-FEAT-create-visuals step 7 | unit (UI) | Every chart created in the session is kept in the session list, and a chart created again replaces its entry. The Export view's listing of them is tested with `UC-FEAT-export-visuals` |
 | UC-FEAT-export-visuals main | integration | Exporting two charts to a temporary folder writes two PNG files, and each image's label contains the title, data source, date range, generation date (the value passed in), and counted field |
 | UC-FEAT-export-visuals 3a | unit (UI) | Cancelling writes no files |
 | UC-FEAT-export-visuals 4a | unit | A read-only folder raises `FolderNotWritableError` and no file is written |
@@ -268,6 +283,13 @@ _[What this design could not settle and who can, and what could go wrong that yo
 - **Keep-both naming.** Propose adding ` (2)`, ` (3)`, and so on before the extension, as macOS Finder does.
 - **Art units per chart.** One Technology Center has dozens of art units, and the whole office has 524; a chart of all of them is unreadable. This design takes the Technology Center as a parameter. Whether the client wants a "top N" chart instead is a client question, and N would be a threshold the team must not invent.
 - **Examiner-level metrics** are not designed (`OI-9`).
+- **What the sample shows (2026-10-18 file, 8,667 office actions, checked by hand during the build).** Candidates for the client under `OI-1`; only the two two-way metrics above are built.
+  - Rejection type differs sharply by Technology Center: §101 is 12% of 3600's tagged rejections and under 1% of 1700's; double patenting is 25% of 1600's. Within 3600, some Art Units are 40–56% §101. Ranking Art Units by a share needs a minimum number of office actions per Art Unit, a threshold the client must set.
+  - The final rejection (CTFR) share ranges from 33% (2800) to 46% (1600). Technology Centers 2900 and 3900 have about 20 office actions each, so their shares swing on a few records; the chart shows n for that reason.
+  - Every record has exactly one tagged rejection entry, which supports `OI-7`'s concern that the tag undercounts.
+  - Time from filing to this office action has a median of 1.8 years (3600) to 2.8 years (1600). This is close to pendency; it waits on `OI-8`.
+  - One-way candidates that fit the current shape: filing year of the applications acted on (mostly 2023–2025), and office actions by Work Group within a Technology Center.
+  - Application type, AIA indicator, and subject matter barely vary (99.7% regular utility applications) and make poor charts.
 - **Risk accepted:** charts are not saved, so after a restart Malachi must create them again before exporting (a few seconds, `PER-dashboard`).
 
 ---
