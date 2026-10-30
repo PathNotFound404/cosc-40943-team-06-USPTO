@@ -110,7 +110,7 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 
 | Function | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
-| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | Chart identity, category (none means the whole chart), offset, page size | `RecordPage`: rows and the total count. Each row: record ID, application number, the chart's counted field, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"). Sorted by source file, then record ID | 2a: `SourceUnavailableError`. 2b: not an error; more pages are fetched with a larger offset. |
+| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | Chart identity, category (none means the whole chart), and for a two-way chart the series ([visualization.md](visualization.md), two-way metrics), offset, page size | `RecordPage`: rows and the total count. Each row: record ID, application number, the chart's counted field, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"). Sorted by source file, then record ID | 2a: `SourceUnavailableError`. 2b: not an error; more pages are fetched with a larger offset. |
 | `provenance.record_detail` | The UI | Record ID, import ID | `RecordDetail`: every stored field of that raw record as stored, plus source file name and import date | Record not found: `SourceUnavailableError`. |
 
 ## Key decisions
