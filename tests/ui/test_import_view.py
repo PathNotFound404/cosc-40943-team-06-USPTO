@@ -3,8 +3,15 @@ from pathlib import Path
 import pytest
 
 from patent_intelligence import storage
+from patent_intelligence.cleaning import StagedSummary
+from patent_intelligence.cleaning.errors import (
+    CleaningFailedError,
+    MissingColumnsError,
+    NoRawDataError,
+)
 from patent_intelligence.ingestion import ImportSummary
 from patent_intelligence.ingestion.errors import UnreadableFileError
+from patent_intelligence.jobs.import_job import ImportJobResult
 from patent_intelligence.jobs.runner import JobRunner
 from patent_intelligence.ui.import_view import ImportView
 from patent_intelligence.ui.main_window import MainWindow
@@ -22,6 +29,11 @@ def view(qt_app, tmp_path: Path):
     database.close()
 
 
+def result(*args, **kwargs) -> ImportJobResult:
+    """A job result whose cleaning did not run, so only the import notice shows."""
+    return ImportJobResult(ImportSummary(*args, **kwargs))
+
+
 def notices(view: ImportView) -> list[str]:
     return [view.notices.item(row).text() for row in range(view.notices.count())]
 
@@ -31,7 +43,7 @@ def notices(view: ImportView) -> list[str]:
 
 def test_the_completion_notice_shows_records_loaded_and_rejected(view) -> None:
     import_view, runner, _ = view
-    runner.finished.emit(ImportSummary(1, "week.json", 8664, 3, {"missing groupArtUnitNumber": 3}))
+    runner.finished.emit(result(1, "week.json", 8664, 3, {"missing groupArtUnitNumber": 3}))
     wait_until(lambda: import_view.notices.count() == 1)
     assert notices(import_view) == [
         "week.json imported: 8,664 records loaded, 3 rejected. "
@@ -41,8 +53,8 @@ def test_the_completion_notice_shows_records_loaded_and_rejected(view) -> None:
 
 def test_the_notice_names_duplicate_records_only_when_there_are_some(view) -> None:
     import_view, runner, _ = view
-    runner.finished.emit(ImportSummary(1, "week.json", 20, 0, duplicate_records=3))
-    runner.finished.emit(ImportSummary(2, "other.json", 20, 0))
+    runner.finished.emit(result(1, "week.json", 20, 0, duplicate_records=3))
+    runner.finished.emit(result(2, "other.json", 20, 0))
     wait_until(lambda: import_view.notices.count() == 2)
     assert notices(import_view) == [
         "week.json imported: 20 records loaded, 0 rejected. 3 of the loaded records have an id "
@@ -53,7 +65,7 @@ def test_the_notice_names_duplicate_records_only_when_there_are_some(view) -> No
 
 def test_an_already_imported_file_says_nothing_changed(view) -> None:
     import_view, runner, _ = view
-    runner.finished.emit(ImportSummary(1, "week.json", 0, 0, already_imported=True))
+    runner.finished.emit(result(1, "week.json", 0, 0, already_imported=True))
     wait_until(lambda: import_view.notices.count() == 1)
     assert notices(import_view) == ["week.json has already been imported. Nothing was changed."]
 
@@ -65,6 +77,36 @@ def test_a_failure_shows_the_error_message_and_no_stack_trace(view) -> None:
     wait_until(lambda: import_view.notices.count() == 1)
     assert notices(import_view) == [error.message]
     assert "Traceback" not in notices(import_view)[0]
+
+
+# --- Cleaning notice (UC-FEAT-clean-data step 4, 1a1, 2a2, 3a1) -------------------------
+
+
+def test_after_the_import_notice_the_view_says_the_data_is_ready_for_charts(view) -> None:
+    import_view, runner, _ = view
+    summary = ImportSummary(1, "week.json", 20, 0)
+    runner.finished.emit(ImportJobResult(summary, StagedSummary(20, 20)))
+    wait_until(lambda: import_view.notices.count() == 2)
+    assert notices(import_view) == [
+        "week.json imported: 20 records loaded, 0 rejected.",
+        "Ready for charts: 20 office actions staged.",
+    ]
+
+
+@pytest.mark.parametrize(
+    "error",
+    [NoRawDataError(), CleaningFailedError(), MissingColumnsError(["staged_rejection.import_id"])],
+)
+def test_a_cleaning_failure_is_shown_after_the_import_notice(view, error) -> None:
+    import_view, runner, _ = view
+    summary = ImportSummary(1, "week.json", 20, 0)
+    runner.finished.emit(ImportJobResult(summary, cleaning_error=error))
+    wait_until(lambda: import_view.notices.count() == 2)
+    assert notices(import_view) == [
+        "week.json imported: 20 records loaded, 0 rejected.",
+        error.message,
+    ]
+    assert "Traceback" not in error.message
 
 
 def test_dropping_a_folder_imports_nothing_and_says_so(view, tmp_path: Path) -> None:
@@ -91,12 +133,14 @@ def test_several_files_import_in_order_and_a_bad_one_is_reported_and_skipped(
     third = write_records(tmp_path / "third.jsonl", records)
 
     import_view.on_files_dropped([first, second, third])
-    wait_until(lambda: import_view.notices.count() == 3)
+    wait_until(lambda: import_view.notices.count() == 5)
 
     shown = notices(import_view)
     assert shown[0] == "office_actions_20.jsonl imported: 20 records loaded, 0 rejected."
-    assert shown[1].startswith("truncated.jsonl could not be read: line 20")
-    assert shown[2] == "third.jsonl imported: 20 records loaded, 0 rejected."
+    assert shown[1] == "Ready for charts: 20 office actions staged."
+    assert shown[2].startswith("truncated.jsonl could not be read: line 20")
+    assert shown[3] == "third.jsonl imported: 20 records loaded, 0 rejected."
+    assert shown[4] == "Ready for charts: 40 office actions staged."
     assert counts(database) == {"import_log": 2, "raw_office_action": 40, "rejected_record": 0}
     stored_files = database.cursor().execute("SELECT file_name FROM import_log").fetchall()
     assert ("truncated.jsonl",) not in stored_files
