@@ -1,9 +1,9 @@
-"""Running metrics over the staged dataset (UC-FEAT-create-visuals steps 2 and 5)."""
+"""Running metrics over the staged dataset (UC-FEAT-create-visuals steps 2, 5, and 6b)."""
 
 import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 
 import duckdb
 
@@ -14,6 +14,46 @@ from patent_intelligence.storage import Database
 log = logging.getLogger(__name__)
 
 _BY_NAME = {metric.name: metric for metric in METRICS}
+
+
+@dataclass(frozen=True)
+class Weeks:
+    """Which weeks a chart counts (6b): every staged office action (both None), those staged
+    from the chosen imports, or those submitted in the chosen calendar weeks. A week is named
+    by its Monday; None in `submission_weeks` stands for the office actions whose Submission
+    Date the source did not give, which can be chosen like a week rather than being dropped
+    (BR-no-data-alteration)."""
+
+    import_ids: frozenset[int] | None = None
+    submission_weeks: frozenset[date | None] | None = None
+
+    def __post_init__(self) -> None:
+        if self.import_ids is not None and self.submission_weeks is not None:
+            raise ValueError("Weeks are chosen by imported file or by calendar week, not both")
+
+
+ALL_WEEKS = Weeks()
+
+
+@dataclass(frozen=True)
+class ImportedFile:
+    """One import that can be chosen, with the staged office actions taken from it."""
+
+    import_id: int
+    file_name: str
+    import_time: datetime
+    office_actions: int
+    earliest_submission: date | None
+    latest_submission: date | None
+
+
+@dataclass(frozen=True)
+class SubmissionWeek:
+    """One calendar week of Submission Date, Monday to Sunday; `monday` is None for the
+    office actions with no Submission Date in the source."""
+
+    monday: date | None
+    office_actions: int
 
 
 @dataclass(frozen=True)
@@ -29,6 +69,7 @@ class MetricResult:
     earliest_submission: date | None
     latest_submission: date | None
     breakdown: tuple[tuple[str | None, str | None, int], ...] = ()
+    weeks: Weeks = ALL_WEEKS
     total: int = field(init=False)
 
     def __post_init__(self) -> None:
@@ -70,20 +111,80 @@ def technology_centers(database: Database) -> list[str]:
     return [technology_center for (technology_center,) in rows]
 
 
-def base_query(name: str, parameters: Mapping[str, str]) -> tuple[str, dict[str, str]]:
-    """The metric's base query and its parameter values, so Provenance lists exactly the rows
-    the chart counted (KD-charts-from-sql). Raises MetricFailedError for an unknown metric or
-    parameters that do not match it."""
+# The Monday of a Submission Date's calendar week (DuckDB's weeks are ISO weeks).
+_WEEK = "date_trunc('week', submission_date)::DATE"
+
+
+def imported_files(database: Database) -> list[ImportedFile]:
+    """Every import, oldest first, with the staged office actions taken from it (6b). An
+    import whose records were all superseded by a later copy has none."""
+    cursor = database.cursor()
+    try:
+        rows = cursor.execute(
+            """
+            SELECT i.import_id, i.file_name, i.import_time, count(o.record_id),
+                min(o.submission_date)::DATE, max(o.submission_date)::DATE
+            FROM import_log AS i LEFT JOIN staged_office_action AS o USING (import_id)
+            GROUP BY i.import_id, i.file_name, i.import_time
+            ORDER BY i.import_id
+            """
+        ).fetchall()
+    finally:
+        cursor.close()
+    return [ImportedFile(*row) for row in rows]
+
+
+def submission_weeks(database: Database) -> list[SubmissionWeek]:
+    """The calendar weeks of Submission Date in the staged dataset, oldest first, then the
+    office actions with no Submission Date, if there are any (6b)."""
+    cursor = database.cursor()
+    try:
+        rows = cursor.execute(
+            f"""
+            SELECT {_WEEK} AS monday, count(*) FROM staged_office_action
+            GROUP BY monday ORDER BY monday NULLS LAST
+            """
+        ).fetchall()
+    finally:
+        cursor.close()
+    return [SubmissionWeek(monday, office_actions) for monday, office_actions in rows]
+
+
+def base_query(
+    name: str, parameters: Mapping[str, str], weeks: Weeks = ALL_WEEKS
+) -> tuple[str, dict[str, object]]:
+    """The metric's base query limited to `weeks`, and its parameter values, so Provenance
+    lists exactly the rows the chart counted (KD-charts-from-sql). Raises MetricFailedError
+    for an unknown metric or parameters that do not match it."""
     metric = _BY_NAME.get(name)
     if metric is None or set(parameters) != set(metric.parameters):
         log.error("No metric %s with parameters %s", name, sorted(parameters))
         raise MetricFailedError(name)
-    return metric.base_query, dict(parameters)
+    query: str = metric.base_query
+    values: dict[str, object] = dict(parameters)
+    if weeks.import_ids is not None:
+        query = f"""
+            SELECT * FROM ({query})
+            WHERE list_contains($chosen_import_ids::INTEGER[], import_id)
+        """
+        values["chosen_import_ids"] = sorted(weeks.import_ids)
+    elif weeks.submission_weeks is not None:
+        query = f"""
+            SELECT * FROM ({query})
+            WHERE list_contains($chosen_weeks::DATE[], {_WEEK})
+                OR ($no_submission_date_chosen AND submission_date IS NULL)
+        """
+        values["chosen_weeks"] = sorted(week for week in weeks.submission_weeks if week)
+        values["no_submission_date_chosen"] = None in weeks.submission_weeks
+    return query, values
 
 
-def run_metric(database: Database, name: str, parameters: Mapping[str, str]) -> MetricResult:
-    """Count the metric's base query by category, in DuckDB. Raises MetricFailedError (5a)."""
-    query, values = base_query(name, parameters)
+def run_metric(
+    database: Database, name: str, parameters: Mapping[str, str], weeks: Weeks = ALL_WEEKS
+) -> MetricResult:
+    """Count the metric's base query over `weeks` by category, in DuckDB. Raises
+    MetricFailedError (5a)."""
+    query, values = base_query(name, parameters, weeks)
     cursor = database.cursor()
     try:
         # One transaction, so the counts and what they cover come from the same staged data
@@ -126,6 +227,7 @@ def run_metric(database: Database, name: str, parameters: Mapping[str, str]) -> 
         earliest,
         latest,
         tuple(breakdown),
+        weeks,
     )
     log.info("Ran the metric %s: %d counted in %d categories", name, result.total, len(counts))
     return result

@@ -48,6 +48,7 @@ _[Send the shortlist to your client the day before. A client who has seen the qu
 | OI-17 | What are the minimum macOS version and minimum hardware the application supports? | Sets `OE-desktop-os` and `OE-minimum-hardware`, and the PyInstaller build target. | Team | 2026-10-26 |
 | OI-18 | Who produces wireframes for the views in `UI-main-views`, and where are they kept? | `UI-wireframes` has no link; the UI design for each use case has nothing to start from. | Team | 2026-10-26 |
 | OI-19 | Can two weekly files contain the same office action (the same `id`), and if so, should charts use the copy with the latest `systemLastModifiedTimestamp`? | The team decided to keep every copy in the raw records and chart the newest (design `intake.md`, duplicate records); a different answer changes the staged dataset in `UC-FEAT-clean-data` and the wording of `DI-no-duplicates`. | Client | 2026-10-29 |
+| OI-20 | When Malachi charts by calendar week, should a week run Monday to Sunday? | `UC-FEAT-create-visuals` 6b groups office actions by the week of their Submission Date. The team chose Monday to Sunday because the 2026-10-18 sample (a Sunday) holds office actions submitted 2026-10-12 to 2026-10-16; a Sunday-to-Saturday week would move records between weeks and change each week's counts. | Client | 2026-10-31 |
 
 Not logged, because the feature is deferred: model licensing (`CO-model-licensing`) and which USPTO API provides office action data (`DE-uspto-api`). Log them when AI or the API comes into scope.
 

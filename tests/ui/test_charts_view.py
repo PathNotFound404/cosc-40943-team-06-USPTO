@@ -2,15 +2,18 @@ import logging
 from types import SimpleNamespace
 
 import pytest
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QDialogButtonBox
 
 from patent_intelligence import analytics
-from patent_intelligence.analytics import METRICS, base_query
-from patent_intelligence.analytics.errors import StagedDataMissingError
+from patent_intelligence.analytics import ALL_WEEKS, METRICS, Weeks, base_query
+from patent_intelligence.analytics.errors import MetricFailedError, StagedDataMissingError
 from patent_intelligence.jobs.cleaning_job import CleaningJob
 from patent_intelligence.jobs.runner import JobRunner
-from patent_intelligence.ui.charts_view import ChartsView, MetricChooser
+from patent_intelligence.ui.charts_view import ChartsView, MetricChooser, WeekChooser, WeekFilter
 from patent_intelligence.ui.import_view import ImportView
 from patent_intelligence.ui.main_window import MainWindow
+from tests.analytics.conftest import TWO_WEEK_DOCUMENT_CODES, WEEK_1, WEEK_2
 from tests.ingestion.conftest import counts
 
 
@@ -37,7 +40,10 @@ def make_view(database, choose=all_metrics, offer_cleaning=None, drill_down=None
         calls.offers.append(message)
         return offer_cleaning
 
-    view = ChartsView(calls.runner, database, choose, offer, drill_down)
+    def keep_weeks(parent, files, weeks, current):
+        return current
+
+    view = ChartsView(calls.runner, database, choose, offer, drill_down, keep_weeks)
     return view, calls
 
 
@@ -236,3 +242,327 @@ def test_the_main_window_has_the_visualizations_view(qt_app, database) -> None:
         "Import",
         "Visualizations",
     ]
+
+
+# --- 6b: choosing the weeks every chart counts, and the Technology Center on its tab ------
+
+
+WEEK_CHOICES = {
+    "all": ALL_WEEKS,
+    "import 2": Weeks(import_ids=frozenset({2})),
+    "week 1": Weeks(submission_weeks=frozenset({WEEK_1})),
+    "week 2": Weeks(submission_weeks=frozenset({WEEK_2})),
+}
+
+
+def only(*names: str):
+    """A chooser that picks these metrics, the Art Unit metric for Technology Center 1600."""
+    return lambda parent, metrics, centers: [
+        (metric, {"technology_center": "1600"} if metric.parameters else {})
+        for metric in metrics
+        if metric.name in names
+    ]
+
+
+def weeks_view(database, weeks=ALL_WEEKS, choose=None, drill_down=None):
+    asked = []
+
+    def choose_weeks(parent, files, offered_weeks, current):
+        asked.append(("weeks", files, offered_weeks, current))
+        return weeks
+
+    def choose_metrics(parent, metrics, centers):
+        asked.append(("metrics",))
+        return (choose or all_metrics)(parent, metrics, centers)
+
+    view = ChartsView(
+        Runner(), database, choose_metrics, lambda *args: False, drill_down, choose_weeks
+    )
+    return view, asked
+
+
+def check(week_filter, mode: int, unchecked_rows: tuple[int, ...] = ()) -> None:
+    week_filter.mode.setCurrentIndex(mode)
+    for row in unchecked_rows:
+        week_filter.choices.item(row).setCheckState(Qt.CheckState.Unchecked)
+
+
+def choice_labels(week_filter) -> list[str]:
+    choices = week_filter.choices
+    return [choices.item(row).text() for row in range(choices.count())]
+
+
+def checked_rows(week_filter) -> list[int]:
+    choices = week_filter.choices
+    return [
+        row
+        for row in range(choices.count())
+        if choices.item(row).checkState() == Qt.CheckState.Checked
+    ]
+
+
+def document_codes(view) -> dict:
+    (chart,) = [c for c in view.charts if c.result.metric.name == "office-actions-by-document-code"]
+    return dict(chart.result.counts)
+
+
+def test_creating_asks_for_the_weeks_before_the_visualizations(qt_app, two_weeks_database) -> None:
+    view, asked = weeks_view(two_weeks_database)
+    view.create_visualizations()
+    assert [step[0] for step in asked] == ["weeks", "metrics"]
+    _, files, weeks, current = asked[0]
+    assert [file.import_id for file in files] == [1, 2]
+    assert [week.monday for week in weeks] == [WEEK_1, WEEK_2]
+    assert current == ALL_WEEKS
+
+
+def test_cancelling_the_weeks_question_creates_nothing(qt_app, two_weeks_database) -> None:
+    view, asked = weeks_view(two_weeks_database, weeks=None)
+    view.create_visualizations()
+    assert [step[0] for step in asked] == ["weeks"]
+    assert view.charts == []
+    assert view.tabs.count() == 0
+
+
+def test_cancelling_the_visualizations_keeps_the_weeks_charted_before(
+    qt_app, two_weeks_database
+) -> None:
+    view, _ = weeks_view(two_weeks_database, weeks=WEEK_CHOICES["week 2"], choose=lambda *a: None)
+    view.create_visualizations()
+    assert view.weeks == ALL_WEEKS
+    assert view.week_filter.isHidden()
+
+
+@pytest.mark.parametrize("choice", list(WEEK_CHOICES))
+def test_the_weeks_chosen_first_are_counted_by_every_chart(
+    qt_app, two_weeks_database, choice
+) -> None:
+    view, _ = weeks_view(two_weeks_database, weeks=WEEK_CHOICES[choice])
+    view.create_visualizations()
+    assert len(view.charts) == len(METRICS)
+    assert all(chart.result.weeks == WEEK_CHOICES[choice] for chart in view.charts)
+    assert document_codes(view) == TWO_WEEK_DOCUMENT_CODES[choice]
+    assert not view.week_filter.isHidden()
+    assert view.week_filter.weeks() == WEEK_CHOICES[choice]
+
+
+def test_the_weeks_question_lists_the_files_and_weeks_all_checked(
+    qt_app, two_weeks_database
+) -> None:
+    files = analytics.imported_files(two_weeks_database)
+    weeks = analytics.submission_weeks(two_weeks_database)
+    dialog = WeekChooser(files, weeks, ALL_WEEKS)
+    week_filter = dialog.week_filter
+    assert week_filter.mode.currentText() == "All imported data"
+    assert week_filter.choices.isHidden()
+
+    check(week_filter, WeekFilter.IMPORTED_FILES)
+    assert choice_labels(week_filter) == [
+        "office_actions_20.jsonl, imported 2026-10-28 "
+        "(19 office actions, submitted 2026-10-13 to 2026-10-16)",
+        "week_2026-10-25.jsonl, imported 2026-11-04 "
+        "(6 office actions, submitted 2026-10-15 to 2026-10-23)",
+    ]
+    assert checked_rows(week_filter) == [0, 1]
+    check(week_filter, WeekFilter.CALENDAR_WEEKS)
+    assert choice_labels(week_filter) == [
+        "2026-10-12 to 2026-10-18 (20 office actions)",
+        "2026-10-19 to 2026-10-25 (5 office actions)",
+    ]
+    assert checked_rows(week_filter) == [0, 1]
+
+
+def test_the_weeks_question_starts_at_the_weeks_charted_now(qt_app, two_weeks_database) -> None:
+    files = analytics.imported_files(two_weeks_database)
+    weeks = analytics.submission_weeks(two_weeks_database)
+    dialog = WeekChooser(files, weeks, WEEK_CHOICES["week 2"])
+    assert dialog.week_filter.mode.currentIndex() == WeekFilter.CALENDAR_WEEKS
+    assert checked_rows(dialog.week_filter) == [1]
+    assert dialog.week_filter.weeks() == WEEK_CHOICES["week 2"]
+
+
+def test_ok_and_apply_need_at_least_one_box_checked(qt_app, two_weeks_database) -> None:
+    files = analytics.imported_files(two_weeks_database)
+    weeks = analytics.submission_weeks(two_weeks_database)
+    dialog = WeekChooser(files, weeks, ALL_WEEKS)
+    ok = dialog.buttons.button(QDialogButtonBox.StandardButton.Ok)
+    check(dialog.week_filter, WeekFilter.IMPORTED_FILES, (0, 1))
+    assert not ok.isEnabled()
+    dialog.week_filter.choices.item(0).setCheckState(Qt.CheckState.Checked)
+    assert ok.isEnabled()
+
+    view, _ = weeks_view(two_weeks_database)
+    view.create_visualizations()
+    check(view.week_filter, WeekFilter.CALENDAR_WEEKS, (0, 1))
+    assert not view.apply_weeks.isEnabled()
+    check(view.week_filter, WeekFilter.ALL)
+    assert view.apply_weeks.isEnabled()
+
+
+@pytest.mark.parametrize(
+    ("mode", "unchecked", "expected"),
+    [
+        (WeekFilter.IMPORTED_FILES, (0,), "import 2"),
+        (WeekFilter.CALENDAR_WEEKS, (0,), "week 2"),
+        (WeekFilter.CALENDAR_WEEKS, (1,), "week 1"),
+        (WeekFilter.ALL, (), "all"),
+    ],
+)
+def test_changing_the_weeks_above_the_tabs_recounts_every_chart(
+    qt_app, two_weeks_database, mode, unchecked, expected
+) -> None:
+    view, _ = weeks_view(two_weeks_database, weeks=WEEK_CHOICES["import 2"])
+    view.create_visualizations()
+    titles = tab_titles(view)
+
+    check(view.week_filter, mode, unchecked)
+    view.apply_weeks.click()
+
+    assert all(chart.result.weeks == WEEK_CHOICES[expected] for chart in view.charts)
+    assert document_codes(view) == TWO_WEEK_DOCUMENT_CODES[expected]
+    for index, chart in enumerate(view.charts):
+        assert view.page(index).scroll.widget().figure is chart.figure
+    assert tab_titles(view) == titles
+    assert notices(view) == []
+
+
+def test_charts_created_later_bring_those_shown_to_the_same_weeks(
+    qt_app, two_weeks_database
+) -> None:
+    view, _ = weeks_view(two_weeks_database, choose=only("office-actions-by-document-code"))
+    view.create_visualizations()
+    assert document_codes(view) == TWO_WEEK_DOCUMENT_CODES["all"]
+
+    later, _ = weeks_view(two_weeks_database, weeks=WEEK_CHOICES["week 2"])
+    view._choose_weeks = later._choose_weeks
+    view._choose = only("office-actions-by-technology-center")
+    view.create_visualizations()
+
+    assert [chart.result.weeks for chart in view.charts] == [WEEK_CHOICES["week 2"]] * 2
+    assert document_codes(view) == TWO_WEEK_DOCUMENT_CODES["week 2"]
+
+
+def test_if_recounting_fails_a_chart_keeps_what_it_showed_and_the_user_is_told(
+    qt_app, two_weeks_database, monkeypatch
+) -> None:
+    view, _ = weeks_view(two_weeks_database, choose=only("office-actions-by-document-code"))
+    view.create_visualizations()
+    shown = view.charts[0]
+
+    def fail(database, name, parameters, weeks):
+        raise MetricFailedError(name)
+
+    monkeypatch.setattr(analytics, "run_metric", fail)
+    check(view.week_filter, WeekFilter.CALENDAR_WEEKS, (0,))
+    view.apply_weeks.click()
+
+    assert view.charts == [shown]
+    assert view.page(0).scroll.widget().figure is shown.figure
+    assert notices(view) == [
+        "These visualizations could not be counted for the chosen weeks and still show the "
+        "weeks they counted before: Office actions by Document Code. "
+        "Details were written to the log file."
+    ]
+
+
+def test_drilling_down_after_choosing_weeks_lists_only_those_weeks_records(
+    qt_app, two_weeks_database
+) -> None:
+    selected = []
+    view, _ = weeks_view(
+        two_weeks_database,
+        weeks=WEEK_CHOICES["import 2"],
+        choose=only("office-actions-by-document-code"),
+        drill_down=lambda chart, category, series: selected.append((chart, category)),
+    )
+    view.create_visualizations()
+    check(view.week_filter, WeekFilter.CALENDAR_WEEKS, (0,))
+    view.apply_weeks.click()
+    chart = view.charts[0]
+    bar = chart.bars[0]
+
+    # Through the redrawn canvas, so its drill-down is wired.
+    view.page(0).scroll.widget().callbacks.process("pick_event", SimpleNamespace(artist=bar.patch))
+
+    assert selected == [(chart, bar.category)]
+    query, values = base_query(chart.result.metric.name, {}, chart.result.weeks)
+    values["category"] = bar.category
+    (records,) = (
+        two_weeks_database.cursor()
+        .execute(f"SELECT count(*) FROM ({query}) WHERE category = $category", values)
+        .fetchone()
+    )
+    assert records == dict(chart.result.counts)[bar.category] == 3
+
+
+def art_unit_view(database, weeks=ALL_WEEKS):
+    view, _ = weeks_view(
+        database,
+        weeks=weeks,
+        choose=only("office-actions-by-document-code", "office-actions-by-art-unit"),
+    )
+    view.create_visualizations()
+    return view, 1  # the Art Unit tab's index
+
+
+def test_only_the_art_unit_tab_offers_the_technology_centers(qt_app, two_weeks_database) -> None:
+    view, art_unit = art_unit_view(two_weeks_database)
+    assert view.page(0).technology_center is None
+    combo = view.page(art_unit).technology_center
+    assert [combo.itemText(i) for i in range(combo.count())] == analytics.technology_centers(
+        two_weeks_database
+    )
+    assert combo.currentText() == "1600"
+
+
+def test_changing_the_technology_center_on_the_tab_redraws_it_over_the_same_weeks(
+    qt_app, two_weeks_database
+) -> None:
+    view, art_unit = art_unit_view(two_weeks_database, weeks=WEEK_CHOICES["week 1"])
+    other = view.charts[0]
+
+    view.page(art_unit).technology_center.setCurrentText("3700")
+
+    chart = view.charts[art_unit]
+    assert chart.result.parameters == {"technology_center": "3700"}
+    assert chart.result.weeks == WEEK_CHOICES["week 1"]
+    expected = analytics.run_metric(
+        two_weeks_database,
+        "office-actions-by-art-unit",
+        {"technology_center": "3700"},
+        WEEK_CHOICES["week 1"],
+    )
+    assert chart.result.counts == expected.counts
+    assert view.page(art_unit).scroll.widget().figure is chart.figure
+    assert view.tabs.tabText(art_unit) == "Office actions by Art Unit, Technology Center 3700"
+    assert view.charts[0] is other
+
+
+def test_if_a_technology_center_cannot_be_counted_the_tab_keeps_its_chart(
+    qt_app, two_weeks_database, monkeypatch
+) -> None:
+    view, art_unit = art_unit_view(two_weeks_database)
+    shown = view.charts[art_unit]
+
+    def fail(database, name, parameters, weeks):
+        raise MetricFailedError(name)
+
+    monkeypatch.setattr(analytics, "run_metric", fail)
+    view.page(art_unit).technology_center.setCurrentText("3700")
+
+    assert view.charts[art_unit] is shown
+    assert view.page(art_unit).technology_center.currentText() == "1600"
+    assert notices(view) == [
+        "Office actions by Art Unit could not be counted for Technology Center 3700. "
+        "Details were written to the log file."
+    ]
+
+
+def test_creating_the_art_unit_chart_again_replaces_its_one_tab(qt_app, two_weeks_database) -> None:
+    view, art_unit = art_unit_view(two_weeks_database)
+    view.page(art_unit).technology_center.setCurrentText("3700")
+    view._choose = only("office-actions-by-art-unit")
+    view.create_visualizations()
+    assert view.tabs.count() == len(view.charts) == 2
+    assert view.charts[art_unit].result.parameters == {"technology_center": "1600"}
+    assert view.page(art_unit).technology_center.currentText() == "1600"

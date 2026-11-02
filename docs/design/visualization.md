@@ -33,6 +33,14 @@ classDiagram
         +create_visualizations(metric_names)
         +on_bar_selected(chart, category)
     }
+    class WeekChooser {
+        <<new, ui>>
+        +choose(files, weeks, current) Weeks
+    }
+    class WeekFilter {
+        <<new, ui>>
+        +weeks() Weeks
+    }
     class ExportView {
         <<new, ui>>
         +export_selected(charts, folder)
@@ -40,7 +48,9 @@ classDiagram
     class Analytics {
         <<new, analytics>>
         +list_metrics() List~Metric~
-        +run_metric(name, parameters) MetricResult
+        +run_metric(name, parameters, weeks) MetricResult
+        +imported_files() List~ImportedFile~
+        +submission_weeks() List~SubmissionWeek~
     }
     class Metric {
         <<new, analytics>>
@@ -66,6 +76,9 @@ classDiagram
         <<new, see verification.md>>
     }
     ChartsView --> Analytics
+    ChartsView --> WeekChooser
+    ChartsView --> WeekFilter
+    WeekChooser --> WeekFilter
     ChartsView --> Charts
     ChartsView --> Provenance
     ExportView --> Export
@@ -75,12 +88,12 @@ classDiagram
 ```
 
 - `analytics/metrics.py` (new): the metric registry. Each `Metric` has a name, a title, the field it counts (`FR-CHART-counted-field`), its parameters, and a **base query** that returns one row per counted item with its record ID and its category.
-- `analytics/service.py` (new): `list_metrics`, `run_metric`, `base_query`, and `technology_centers` (the choices for the Art Unit metric's parameter). Counts are `count(*)` grouped by category, and by category and series for a two-way metric, over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range).
+- `analytics/service.py` (new): `list_metrics`, `run_metric`, `base_query`, and `technology_centers` (the choices for the Art Unit metric's parameter). Counts are `count(*)` grouped by category, and by category and series for a two-way metric, over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range). `Weeks` is what a chart counts (6b): all staged office actions, those staged from chosen imports, or those submitted in chosen calendar weeks; `base_query` applies it, so the counts and Provenance read the same rows. `imported_files` and `submission_weeks` list the choices with their office action counts.
 - `analytics/errors.py` (new): `StagedDataMissingError`, `MetricFailedError`.
 - `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure, the chart's identity (metric name, parameters, import IDs, counted field, date range), and each bar or segment as a `Bar` with its category and series. Every chart shows its counted field on screen. Categories are ordered largest first; a series value beyond the eight colors is a drawing failure (5a) rather than two series sharing a color.
 - `charts/export.py` (new): `find_conflicts` and `export_charts`. Adds the label block (title, data source, date range, generation date, counted field) and writes PNG.
 - `charts/errors.py` (new): `FolderNotWritableError`.
-- `ui/charts_view.py` (new): the Visualizations tab. `MetricChooser` lists every metric checked, with a Technology Center drop-down beside the Art Unit metric, starting at the first staged (steps 3 and 4). One tab per chart (step 6); a chart created again with the same metric and parameters replaces its tab. `ChartsView.charts` is the session's list of charts, which Export reads (step 7). A click on a bar or segment calls the drill-down hook with the chart, category, and series; `app.py` wires it to Provenance when `UC-FEAT-verify-source` is built, and until then bars are not selectable.
+- `ui/charts_view.py` (new): the Visualizations tab. `MetricChooser` lists every metric checked, with a Technology Center drop-down beside the Art Unit metric, starting at the first staged (steps 3 and 4). Before it, `WeekChooser` asks which imported data to chart (steps 3 and 4), starting at the data charted now. `WeekFilter` is the choice itself: all imported data, imported files, or calendar weeks, each a checklist that starts all checked; the same filter sits above the tabs once there are charts, and "Apply to all visualizations" counts every chart again (6b). `ChartsView.weeks` is the one choice every chart counts; creating charts later brings those already shown to it. One tab per chart (step 6); a chart created again with the same metric replaces its tab. Each tab is a `ChartPage`; the Art Unit chart's has a Technology Center drop-down that redraws it as soon as it changes (6c). `ChartsView.charts` is the session's list of charts, which Export reads (step 7). A click on a bar or segment calls the drill-down hook with the chart, category, and series; `app.py` wires it to Provenance when `UC-FEAT-verify-source` is built, and until then bars are not selectable.
 - `jobs/cleaning_job.py` (new): `CleaningJob` runs `build_staged_dataset` on the Job Runner when the user chooses to clean from 2a2; the Import view shows its progress and result with the other jobs'.
 - `ui/export_view.py` (new): the list of charts open in this session, the folder picker, and the overwrite-or-keep-both question (5b1).
 - `storage` (reused from [intake.md](intake.md)): read cursors only; this area never writes to the database.
@@ -126,12 +139,13 @@ sequenceDiagram
         AN-->>CV: StagedDataMissingError
         CV-->>M: Clean the data first - offers UC-FEAT-clean-data (2a1, 2a2)
     else staged
-        CV-->>M: Metric list, all checked (step 3)
-        alt cancels (4a)
-            CV-->>M: Nothing created (4a1)
-        else chooses metrics and confirms (step 4)
+        CV->>AN: imported_files(), submission_weeks()
+        CV-->>M: Which imported data, then the metric list, all checked (step 3)
+        alt cancels either (4a)
+            CV-->>M: Nothing created, the data charted is unchanged (4a1)
+        else chooses data and metrics and confirms (step 4)
             loop each chosen metric (step 5)
-                CV->>AN: run_metric(name, parameters)
+                CV->>AN: run_metric(name, parameters, weeks)
                 AN->>ST: count by category over the base query
                 alt query fails (5a)
                     AN-->>CV: MetricFailedError - logged, next metric (5a1)
@@ -143,10 +157,33 @@ sequenceDiagram
             end
             CV-->>M: One tab per chart, each naming its counted field (step 6)
             CV-->>M: Lists the metrics that failed, if any (5a2)
+            CV->>AN: run_metric for each chart already shown over other data
             Note over CV: Charts kept in the session for Export (step 7)
             opt drills down (6a)
                 M->>CV: Selects a bar (6a1)
-                CV->>PV: records behind the chart and category (6a2, see verification.md)
+                CV->>PV: records behind the chart, its weeks, and category (6a2, see verification.md)
+            end
+            opt changes the data above the tabs (6b)
+                M->>CV: All data, imported files, or calendar weeks, then Apply (6b1)
+                loop each chart
+                    CV->>AN: run_metric(name, parameters, weeks)
+                    alt query fails (5a)
+                        AN-->>CV: MetricFailedError - that chart stays as it was, the user is told
+                    else
+                        CV->>CH: draw(result)
+                        CV-->>M: The tab redrawn over the chosen data (6b2)
+                    end
+                end
+            end
+            opt changes the Technology Center on the Art Unit tab (6c)
+                M->>CV: Chooses a Technology Center (6c1)
+                CV->>AN: run_metric(art unit, technology center, weeks)
+                alt query fails (5a)
+                    AN-->>CV: MetricFailedError - the chart and drop-down stay, the user is told
+                else
+                    CV->>CH: draw(result)
+                    CV-->>M: The tab redrawn for that Technology Center (6c2)
+                end
             end
         end
     end
@@ -200,8 +237,10 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 |---|---|---|---|---|
 | `analytics.list_metrics` | The UI | None | The metric registry: name, title, counted field, series field, parameters | 2a: `StagedDataMissingError` when the staged views are missing or empty. |
 | `analytics.technology_centers` | The UI (the Art Unit metric's parameter) | None | The Technology Centers staged, in order | None. |
-| `analytics.run_metric` | The UI, and Provenance (verification.md) | Metric name, parameter values | `MetricResult`: count per category, and for a two-way metric count per category and series (`breakdown`); counted field, import IDs covered, earliest and latest submission date | 5a: `MetricFailedError` naming the metric. |
-| `analytics.base_query` | Provenance only | Metric name, parameter values | The base query and its parameters, so Provenance filters the same rows the chart counted (`KD-charts-from-sql`). Rows: record ID, category, series (two-way metrics only), import ID, submission date | Unknown metric or wrong parameters: `MetricFailedError`. |
+| `analytics.imported_files` | The UI (the week chooser and filter) | None | Each import: ID, file name, import time, office actions staged from it, earliest and latest submission date | None. |
+| `analytics.submission_weeks` | The UI (the week chooser and filter) | None | Each calendar week of Submission Date (named by its Monday) with its office actions, then those with no Submission Date | None. |
+| `analytics.run_metric` | The UI, and Provenance (verification.md) | Metric name, parameter values, `Weeks` (default all) | `MetricResult`: count per category, and for a two-way metric count per category and series (`breakdown`); counted field, import IDs covered, earliest and latest submission date | 5a: `MetricFailedError` naming the metric. |
+| `analytics.base_query` | Provenance only | Metric name, parameter values, `Weeks` (the chart's own) | The base query and its parameters, so Provenance filters the same rows the chart counted (`KD-charts-from-sql`). Rows: record ID, category, series (two-way metrics only), import ID, submission date | Unknown metric or wrong parameters: `MetricFailedError`. |
 | `charts.draw` | The UI | `MetricResult` | `Chart`: figure plus identity (metric, parameters, import IDs, counted field, date range), and each bar or segment with the category and series it shows | Drawing failure is a 5a failure for that metric. |
 | `charts.find_conflicts` | The Export view | Charts, folder | The file names that already exist | 4a: `FolderNotWritableError`. |
 | `charts.export_charts` | The Export view | Charts, folder, overwrite or keep-both decision per conflict, generation date (passed in, [8.2.2](architectural-design.md#82-other-concepts)) | `ExportSummary`: path of each saved file, and each chart that failed with its reason | 4a: `FolderNotWritableError`. 5a: per chart, in the summary, not raised. |
@@ -225,6 +264,10 @@ _A decision that affects the whole system rather than this area is an architectu
 **A two-way metric is the same base query with a series column, drawn as 100% stacked bars.** Each Technology Center is one horizontal bar split into the shares of its series, with its total (n) beside its name; a segment shows its share where it fits, and selecting one drills down to that category and series. Rejected: stacking counts, where Technology Center 3900 (19 office actions in the sample) vanishes beside 3700 (1,402); grouped bars, which give 70 bars for 10 Technology Centers and 7 types; and a separate cross-tab query, which breaks the base-query decision above. Shares are computed from the counts on screen, not stored.
 
 **A series keeps its color from week to week.** Each two-way metric lists its known series values in a fixed order, and colors follow that order; a value not listed comes after them, and a value the source did not give is gray. Rejected: coloring by rank, which repaints a type when another type's count overtakes it.
+
+**One choice of weeks for every chart, made two ways.** The user chooses the data before choosing the charts, and can change it above the tabs afterwards; every chart is counted again, and charts created later bring the others to the same choice, so the charts on screen and staged for export always count the same data. The choice is all imported data, imported files (each an import of a Weekly Release file), or calendar weeks of Submission Date, several at once. The two ways are kept apart because they disagree when a file holds office actions from more than one week, or when a later file supersedes an office action (it then belongs to the import cleaning chose, [intake.md](intake.md) duplicate records, but keeps its own Submission Date). A week runs Monday to Sunday (`OI-20`). Office actions with no Submission Date are their own choice rather than dropped (`BR-no-data-alteration`). Rejected: a choice on each tab (built first, then changed at the client's request), which let two charts on screen count different data; and combining both ways in one selection, which nobody asked for.
+
+**The Art Unit chart is one tab whose Technology Center changes on the tab.** The drop-down redraws the chart as soon as it changes, so the user can flip through Technology Centers; creating the chart again replaces that tab with the chooser's Technology Center. Rejected: a tab per Technology Center, which fills the tab bar with up to ten Art Unit tabs.
 
 **One image size.** PNG, sized for a LinkedIn post (`INT-export`). The exact pixel size is not specified anywhere; see Open questions.
 
@@ -255,6 +298,10 @@ _[One row per flow: the main success scenario and **every** extension of every u
 | UC-FEAT-create-visuals two-way | integration | Each two-way metric's count per category and series equals the counts computed by hand for the fixture; the breakdown sums to the base query's rows, each category's shares sum to 100, and filtering the base query to one category and series returns that segment's count |
 | UC-FEAT-create-visuals two-way colors | unit | A series keeps its color when the counts change order, and a missing series is gray |
 | UC-FEAT-create-visuals no type | unit | A rejection entry with no type is its own bar, and the bars sum to the rejection entries staged |
+| UC-FEAT-create-visuals 6b | integration | Over two imports in two weeks, `imported_files` and `submission_weeks` list each with the office actions counted by hand; each choice (all, each import, each week, both together) gives the hand counts, for rejection metrics too; the base query with the chart's weeks returns exactly the rows counted; office actions with no Submission Date can be chosen |
+| UC-FEAT-create-visuals steps 3-4, 4a | unit (UI) | Creating asks for the data before the metrics, offering the imports and weeks and starting at the data charted now; the choices are listed all checked; OK needs one box checked; cancelling either question creates nothing and keeps the data charted; the data chosen is counted by every chart |
+| UC-FEAT-create-visuals 6b | unit (UI) | Applying a choice above the tabs recounts every chart; Apply needs one box checked; charts created later bring those shown to the same data; a failed recount keeps that chart and tells the user; drilling down after a change lists only the chosen data's records |
+| UC-FEAT-create-visuals 6c | unit (UI) | Only the Art Unit tab offers the staged Technology Centers, starting at the chosen one; changing it redraws that tab over the same data and renames it; a failure keeps the chart and the drop-down and tells the user; creating the chart again replaces its one tab |
 | UC-FEAT-create-visuals step 7 | unit (UI) | Every chart created in the session is kept in the session list, and a chart created again replaces its entry. The Export view's listing of them is tested with `UC-FEAT-export-visuals` |
 | UC-FEAT-export-visuals main | integration | Exporting two charts to a temporary folder writes two PNG files, and each image's label contains the title, data source, date range, generation date (the value passed in), and counted field |
 | UC-FEAT-export-visuals 3a | unit (UI) | Cancelling writes no files |
