@@ -9,6 +9,7 @@ from patent_intelligence import settings, storage
 from patent_intelligence.errors import AppError
 from patent_intelligence.jobs.runner import JobRunner
 from patent_intelligence.logging_setup import configure_logging
+from patent_intelligence.ui.charts_view import ChartsView
 from patent_intelligence.ui.import_view import ImportView
 from patent_intelligence.ui.main_window import MainWindow
 
@@ -30,7 +31,8 @@ def main() -> int:
         return 1
 
     runner = JobRunner()
-    window = MainWindow(ImportView(runner, database))
+    # Drilling into a bar (6a) is wired when Provenance is built (UC-FEAT-verify-source).
+    window = MainWindow(ImportView(runner, database), ChartsView(runner, database))
     window.show()
     exit_code = app.exec()
     runner.shutdown(wait=False)

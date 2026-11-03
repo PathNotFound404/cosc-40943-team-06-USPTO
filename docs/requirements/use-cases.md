@@ -33,6 +33,7 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 | 2026-09-25 | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
 | 2026-10-26 | 1.1 | Filled introduction and use case list; removed worked example; added `UC-FEAT-verify-source` and `UC-FEAT-export-visuals`; completed Associated Information and fixed extension numbering | Tanner |
 | 2026-10-28 | 1.2 | Marked `UC-FEAT-query-ai` deferred and linked it to `FEAT-Query-AI`; added business rules to `UC-FEAT-create-visuals`; linked open issues; fixed glossary references and bracketed dates | Cody Pinkston |
+| 2026-10-31 | 1.3 | `UC-FEAT-create-visuals`: the user first chooses the imported data every visualization counts (by imported file or by calendar week of Submission Date), and can change it, or the Art Unit visualization's Technology Center, after the visualizations are shown (extensions 6b, 6c) | Cody Pinkston |
 
 ---
 
@@ -308,8 +309,8 @@ Failure handling: querying does not change stored data. If the local model fails
 
 1. The user indicates to create visualizations.
 2. The system confirms the data is cleaned and staged.
-3. The system asks the user to choose specific visualization types or all available visualizations.
-4. The user selects one or more visualization types, or all, and confirms.
+3. The system asks the user which imported data to visualize, then to choose specific visualization types or all available visualizations.
+4. The user selects all imported data, one or more imported files, or one or more calendar weeks of Submission Date; then selects one or more visualization types, or all, and confirms. Every visualization counts the same data.
 5. The system runs the visualization scripts against the staged data.
 6. The system displays each visualization on its own tab, linked to its underlying data.
 7. The system stages the visualizations for export.
@@ -330,6 +331,14 @@ Failure handling: querying does not change stored data. If the local model fails
     - 6a1. The user selects a visualization or data point.
     - 6a2. The system displays the underlying stored records.
     - 6a3. The flow returns to step 6.
+- **6b. The user changes the imported data visualized:**
+    - 6b1. Above the visualizations, the user chooses all imported data, one or more imported files, or one or more calendar weeks of Submission Date, and applies it.
+    - 6b2. The system counts every visualization again over the chosen data and redraws each on its tab, still linked to its underlying data.
+    - 6b3. The flow returns to step 6.
+- **6c. The user changes the Technology Center of the Art Unit visualization:**
+    - 6c1. On the visualization's tab, the user chooses another Technology Center.
+    - 6c2. The system redraws the visualization on the same tab for that Technology Center, over the same data.
+    - 6c3. The flow returns to step 6.
 
 **Priority:** Very High
 **Frequency of Use:** Most frequent. Along with decompressing and cleaning data, this is the most important feature.
@@ -340,6 +349,7 @@ Failure handling: querying does not change stored data. If the local model fails
 | Property name | Data type | Validation rule | Security or access concerns | Glossary reference |
 |---|---|---|---|---|
 | visualization type | Enumeration | Optional; one or more of the available types; defaults to all | none; local desktop app | Visualization |
+| weeks counted | Enumeration | One choice for every visualization; all imported data, or one or more imported files, or one or more calendar weeks of Submission Date; defaults to all imported data | none; local desktop app | Weekly Release, Import |
 
 Display strategy: one tab per metric, each with a link to its underlying data.
 
@@ -353,6 +363,7 @@ Failure handling: creating visualizations does not change stored data. If execut
 - Which export format(s) the staged visualizations should support (`OI-2`).
 - Whether the user chooses visualization types or always receives all of them (`OI-3`).
 - Which field rejection charts count by default, the tag or the letter text (`OI-7`), and how pendency is calculated (`OI-8`).
+- Whether a calendar week runs Monday to Sunday (`OI-20`).
 
 ---
 

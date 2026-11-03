@@ -9,6 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QLabel, QListWidget, QProgressBar, QVBoxLayout, QWidget
 
+from patent_intelligence.cleaning import StagedSummary
 from patent_intelligence.errors import AppError
 from patent_intelligence.ingestion import ImportSummary
 from patent_intelligence.jobs.import_job import ImportJob, ImportJobResult
@@ -81,6 +82,8 @@ class ImportView(QWidget):
             self.notices.addItem(import_notice(result.import_summary))
             if notice := cleaning_notice(result):
                 self.notices.addItem(notice)
+        elif isinstance(result, StagedSummary):  # cleaning chosen from Visualizations (2a2)
+            self.notices.addItem(staged_notice(result))
 
     def _show_failed(self, error: AppError) -> None:
         self.progress_label.setText("")
@@ -116,8 +119,10 @@ def cleaning_notice(result: ImportJobResult) -> str | None:
         return result.cleaning_error.message
     if result.staged_summary is None:
         return None
+    return staged_notice(result.staged_summary)
+
+
+def staged_notice(summary: StagedSummary) -> str:
     # Rejections are left out: next to the import notice's rejected records they read as the
     # same thing.
-    return (
-        f"Ready for charts: {result.staged_summary.office_actions_staged:,} office actions staged."
-    )
+    return f"Ready for charts: {summary.office_actions_staged:,} office actions staged."

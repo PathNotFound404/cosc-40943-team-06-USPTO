@@ -93,6 +93,13 @@ def test_after_the_import_notice_the_view_says_the_data_is_ready_for_charts(view
     ]
 
 
+def test_cleaning_chosen_from_visualizations_shows_when_the_data_is_ready(view) -> None:
+    import_view, runner, _ = view
+    runner.finished.emit(StagedSummary(20, 20))
+    wait_until(lambda: import_view.notices.count() == 1)
+    assert notices(import_view) == ["Ready for charts: 20 office actions staged."]
+
+
 @pytest.mark.parametrize(
     "error",
     [NoRawDataError(), CleaningFailedError(), MissingColumnsError(["staged_rejection.import_id"])],
