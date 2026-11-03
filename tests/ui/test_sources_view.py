@@ -142,3 +142,18 @@ def test_a_failed_lookup_is_shown_without_offering_to_recreate(
     assert view.notices.item(0).text() == SourceLookupFailedError().message
     assert calls.offers == []
     assert view.model is None
+
+
+def test_a_source_that_becomes_unavailable_while_scrolling_is_reported(
+    qt_app, two_weeks_database
+) -> None:
+    result = document_codes(two_weeks_database)
+    view, calls = make_view(two_weeks_database, page_size=6)
+    view.show_sources(result, None)
+    model = view.model
+    remove_import(two_weeks_database, 2)
+    model.fetchMore()
+    assert calls.offers == [provenance.SourceUnavailableError().message]
+    assert model.rowCount() == 6  # nothing from the changed data was added
+    assert not model.canFetchMore()
+    assert view.model is None
