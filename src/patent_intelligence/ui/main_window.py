@@ -1,6 +1,6 @@
 """The main window and its view tabs (UI-main-views). Release 1.0 views are added as their
-use cases are built: Import, Visualizations, then Sources. How the chart tabs map onto Weekly
-Overview, Art Units, and Trends waits on wireframes (OI-18)."""
+use cases are built: Import, Visualizations, Sources, then Export. How the chart tabs map onto
+Weekly Overview, Art Units, and Trends waits on wireframes (OI-18)."""
 
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QWidget
 
@@ -13,6 +13,7 @@ class MainWindow(QMainWindow):
         import_view: QWidget,
         charts_view: QWidget | None = None,
         sources_view: QWidget | None = None,
+        export_view: QWidget | None = None,
     ) -> None:
         super().__init__()
         self.setWindowTitle(APP_NAME)
@@ -23,4 +24,6 @@ class MainWindow(QMainWindow):
             self.tabs.addTab(charts_view, "Visualizations")
         if sources_view is not None:
             self.tabs.addTab(sources_view, "Sources")
+        if export_view is not None:
+            self.tabs.addTab(export_view, "Export")
         self.setCentralWidget(self.tabs)
