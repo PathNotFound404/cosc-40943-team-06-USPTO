@@ -77,6 +77,7 @@ class SourcesView(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setStretchLastSection(True)
 
         self.record_heading = QLabel()
         self.record_heading.setWordWrap(True)
@@ -115,6 +116,7 @@ class SourcesView(QWidget):
             self._database, result, selection, first, self._show_error, self._page_size
         )
         self.table.setModel(self.model)
+        self.table.resizeColumnsToContents()  # record IDs are long; show them whole
         self.table.selectionModel().currentRowChanged.connect(
             lambda current, _previous: self.on_record_selected(current.row())
         )
