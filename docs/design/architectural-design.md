@@ -271,15 +271,15 @@ _Section 4.4 of [vision and scope](../requirements/vision-and-scope.md) says who
 
 | Environment | Desktop Application | Analytics Database |
 |---|---|---|
-| Development | Each team member's laptop (macOS or Windows), run from source in a Python 3.12 virtual environment | A DuckDB file in a local, git-ignored data folder; the full sample weekly file stays in the git-ignored `example data/` folder |
-| Continuous integration | GitHub Actions runners: tests on every pull request; the macOS (Apple silicon) runner builds the app | A temporary DuckDB file created by the tests from small fixture files |
-| Production | Malachi's 2022 MacBook Air (Apple silicon), as a macOS app in Applications | One DuckDB file in the application's data folder under `~/Library/Application Support` |
+| Development | Each team member's laptop (macOS or Windows), run from source in a Python 3.14 virtual environment | A DuckDB file in a local, git-ignored data folder; the full sample weekly file stays in the git-ignored `example data/` folder |
+| Continuous integration | GitHub Actions runners: `ruff` and `pytest` on macOS and Windows for every pull request (`.github/workflows/ci.yml`); the macOS 15 Apple silicon runner builds the app (`.github/workflows/release.yml`) | A temporary DuckDB file created by the tests from small fixture files |
+| Production | Malachi's 2022 MacBook Air (Apple silicon, macOS 15 or later), as a macOS app in Applications | One DuckDB file in the application's data folder under `~/Library/Application Support` |
 
 **How a change gets there**
 
 1. A pull request runs `ruff` and `pytest` on GitHub Actions. It cannot merge until they pass and it has the reviews `team-contract.md` section 5 requires.
-2. A release is a version tag on `main`. The tag triggers a macOS Apple silicon runner that builds the app with PyInstaller (`KD-packaging-pyinstaller`) and attaches it to a GitHub Release.
-3. Malachi downloads the release and drags the app into Applications. The app is unsigned unless the code-signing question in section 11 of the specification is resolved, so the first launch needs the macOS "Open anyway" step, which the user guide describes (`MNT-user-guide`, `RISK-unsigned-app`).
+2. A release is a version tag on `main` that matches `__version__`. The tag triggers a macOS Apple silicon runner that runs the tests, builds the app with PyInstaller (`KD-packaging-pyinstaller`) using `packaging/build_macos.sh`, starts the built app once as a smoke test (`packaging/smoke_test.py`), and attaches a DMG to a GitHub Release.
+3. Malachi downloads the DMG and drags the app into Applications. Release 1.0 is ad-hoc signed but not notarized (`OI-12`), so the first launch needs the macOS "Open Anyway" step in System Settings, which the [user guide](../user-guide.md) describes (`MNT-user-guide`, `RISK-unsigned-app`).
 4. On first start after an update, Storage applies any pending schema migrations to the existing database file.
 
 This meets section 4.4 of vision and scope: it runs only on Malachi's machine, he installs it himself, and nothing is hosted.
@@ -436,7 +436,7 @@ _A decision that turns out wrong is not deleted or rewritten. Mark it **Supersed
 
 - **Driving requirements:** `USE-zero-config`, `OE-no-manual-dependencies`, `CO-zero-recurring-cost`.
 - **Context:** Malachi must install it without a terminal, and at least part of the team develops on Windows, so the Mac build must come from a Mac.
-- **Decision:** PyInstaller produces the macOS app on a GitHub Actions Apple silicon runner when a release is tagged (section 7).
+- **Decision:** PyInstaller produces the macOS app on a GitHub Actions Apple silicon runner when a release is tagged (section 7). The app is a folder bundle (not PyInstaller's one-file mode, which starts slowly), arm64 only, for macOS 15 and later (`OI-17`), ad-hoc signed, and shipped in a drag-to-Applications DMG made with macOS's own `hdiutil`. PyInstaller is pinned in `requirements-build.txt`, separate from `requirements.txt`. Shown in: `packaging/patent-intelligence.spec`, `packaging/build_macos.sh`.
 - **Rejected:** Briefcase, which has built-in signing support but fewer worked examples with PySide6. Shipping source code with `pip install` instructions, which needs a terminal.
 - **Trade-off:** The app is large because it bundles Python, Qt, and DuckDB. It is unsigned unless someone pays for an Apple developer account (`RISK-unsigned-app`).
 
@@ -464,7 +464,7 @@ _**Verified by** names the test, or the repeatable manual check, that shows the 
 | `QS-corrupt-file-reported` | Malachi imports three weekly files, one of them truncated | Normal operation | The two good files import; the truncated one is reported and none of its records are stored | No partial data from the bad file, and a report naming it (`ROB-bad-input`) | |
 | `QS-changed-layout-refused` | Malachi imports a weekly file missing a field the charts need | Normal operation | The file is refused and the missing fields are listed | No records from that file reach the staged dataset or any chart (`ROB-format-change`) | |
 | `QS-interrupted-import-resumes` | Malachi quits the application in the middle of importing a file | Import in progress | On restart, earlier files are intact and the interrupted file can be imported again | No duplicate records and no partial file (`ROB-resume`, `DI-no-duplicates`) | |
-| `QS-fresh-mac-install` | A tester installs the released app on a Mac that has never had Python | Clean macOS account | The tester imports a weekly file and sees the Weekly Overview | No terminal or configuration step (`USE-zero-config`) | |
+| `QS-fresh-mac-install` | A tester installs the released app on a Mac that has never had Python | Clean macOS account | The tester imports a weekly file and sees the Weekly Overview | No terminal or configuration step (`USE-zero-config`) | Manual check before each release: a new macOS 15 user account, following [the user guide](../user-guide.md) sections 1–3. The build's start-up is also checked automatically by `packaging/smoke_test.py`. Not yet run for 1.0. |
 | `QS-no-network-traffic` | A tester runs import, chart, verify, and export while monitoring network traffic | Normal operation | The application works without any network connection | Zero connections opened by the application (`SEC-no-data-egress`) | |
 
 ## 11. Risks and Technical Debt
@@ -485,7 +485,7 @@ _A risk written as a category ("security", "performance") is not a risk. Write t
 | `RISK-large-file-memory` | Risk | The client mentions weekly downloads of 20–50 GB. Reading one into memory on a 24 GB laptop crashes the application part-way through. | Stream with DuckDB, with a memory limit and a spill folder (section 8.2.8). Test with a generated file larger than the computer's memory before release. | `SCA-weekly-volume`, `OE-client-machine` |
 | `RISK-rejection-field-conflict` | Risk | The USPTO's rejection tags and the letter text disagree (the §102 undercount). If metrics use the wrong one, a published figure is wrong by more than three times. | Each metric is labeled with the field it counts (`KD-charts-from-sql`). The client decides which field is the source of truth. | `RI-Inconsistent-Source-Fields`, `OI-1` |
 | `RISK-storage-growth` | Risk | Keeping the full office action text (`KD-raw-and-staged`) is about 20 GB a year before compression. Several years plus grant and litigation data could fill the drive. | Measure the compressed size of the sample in DuckDB early. Show disk usage and allow dataset deletion (`DI-storage-visibility`, `DI-disposal`). | `RI-Storage-Cost`, `SCA-storage-limit` |
-| `RISK-unsigned-app` | Risk | macOS blocks unsigned apps on first launch, and Malachi may not get past the warning, which fails `USE-zero-config`. | Document the "Open anyway" step in the user guide. Ask the client whether a paid Apple developer account is acceptable under `CO-zero-recurring-cost`. | Specification section 11, `MNT-user-guide` |
+| `RISK-unsigned-app` | Risk | macOS blocks unsigned apps on first launch, and Malachi may not get past the warning, which fails `USE-zero-config`. On macOS 15, right-click → Open no longer skips it. | Accepted for 1.0: the app is ad-hoc signed and the [user guide](../user-guide.md) section 2 walks through "Open Anyway". The client is still asked whether a paid Apple developer account is acceptable under `CO-zero-recurring-cost` (`OI-12`); if so, add Developer ID signing and notarization to `packaging/build_macos.sh`. | Specification section 11, `MNT-user-guide`, `OI-12` |
 | `RISK-duckdb-upgrade` | Risk | A new DuckDB version cannot open a database file written by an older release, so Malachi loses access to his history after an update. | Pin the DuckDB version. Before each release, CI opens a database file created by the previous release. | `KD-embedded-duckdb` |
 | `TD-macos-only` | Debt | Only an Apple silicon macOS build is produced, although `OE-desktop-os` lists Windows. | All libraries are cross-platform; add a Windows build to CI when Windows comes into scope. | `OE-desktop-os`, vision and scope 4.3 |
 

@@ -119,7 +119,7 @@ _Examples:_
 - _`OE-server-platform`: The system shall run on a server running the current corporate-approved version of Linux._
 - _`OE-access-paths`: The system shall permit access from the corporate intranet, from a VPN connection, and from Android and iOS phones and tablets._
 
-- OE-desktop-os: The application shall run on macOS on Apple silicon. Minimum macOS version: TBD (`OI-17`). Windows is out of scope for release 1.0 (vision and scope 4.3), but only cross-platform libraries are used so it remains possible later (architecture `TD-macos-only`).
+- OE-desktop-os: The application shall run on macOS on Apple silicon. Minimum macOS version: 15 Sequoia (`OI-17`, resolved 2026-11-03). Windows is out of scope for release 1.0 (vision and scope 4.3), but only cross-platform libraries are used so it remains possible later (architecture `TD-macos-only`).
 - OE-minimum-hardware: The application shall run on a computer with at least 16 GB of RAM and 50 GB of free storage. A GPU is optional (TBD, `OI-17`).
 - OE-hardware-adaptive: When it starts, the application shall detect the available CPU, RAM, and storage, and adjust its processing to match. Adjusting the AI model choice is deferred with the AI features (architecture `KD-no-ai-in-mvp`).
 - OE-offline-operation: Once data is loaded, the application shall do all processing, analysis, and AI work without an internet connection.
@@ -500,7 +500,7 @@ Release 1.0 supports a single locale: US English with USPTO data only (`BR-uspto
 _[Anything real that fits nowhere above: legal, licensing, installation, training, documentation. Delete this section if it is empty rather than leaving it as a placeholder.]_
 
 - **Licensing:** The application shall include a notice listing the licenses of all bundled open-source software and AI models.
-- **Installation:** The application shall install as a single desktop app. Whether it is code-signed is TBD (`OI-12`): signing requires a paid Apple developer account, which conflicts with `CO-zero-recurring-cost`.
+- **Installation:** The application shall install as a single desktop app, delivered as a DMG the user drags into Applications. Release 1.0 is ad-hoc signed but not notarized, so the first launch needs one "Open Anyway" confirmation in System Settings ([user guide](../user-guide.md) section 2). Notarization requires a paid Apple developer account, which conflicts with `CO-zero-recurring-cost`; the client has not yet confirmed this choice (`OI-12`).
 - **Disclaimer:** Exported reports shall state that they are independent analysis of public USPTO data, not official USPTO statements.
 
 ---

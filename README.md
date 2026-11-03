@@ -2,9 +2,13 @@
 
 A desktop application that imports the USPTO's weekly office action bulk file and stores every record on your own computer, ready for charts. Everything runs locally: no server, no cloud service, no network connection.
 
-Release 1.0 is in progress. What works today is **importing a weekly file** (`UC-FEAT-decompile-files`). Charts, source verification, and export come with later use cases; see [docs/traceability.md](docs/traceability.md) for the status of each.
+Release 1.0 imports weekly files, builds the staged dataset, creates visualizations, shows the source records behind them, and exports labeled images. See [docs/traceability.md](docs/traceability.md) for the status of each use case.
 
-This README is for running the application from source. The packaged macOS app is not built yet.
+## Install the app (for Malachi)
+
+Download the `.dmg` from the repository's **Releases** page, open it, and drag the app into Applications. The [user guide](docs/user-guide.md) covers the one-time "Open Anyway" step on first launch, updating, and where your data is kept. You don't need Python or the Terminal.
+
+The rest of this README is for developers running the application from source.
 
 ## What you need
 
@@ -33,7 +37,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 pip install -r requirements.txt
 ```
 
-`requirements.txt` pins every package: DuckDB, PySide6, pytest, and ruff.
+`requirements.txt` pins every package: DuckDB, matplotlib, PySide6, pytest, and ruff. `requirements-build.txt` adds PyInstaller, which you only need to build the app.
 
 ## Run the application
 
@@ -84,15 +88,16 @@ python
 
 ```python
 import duckdb
+
 db = duckdb.connect("data/patent-intelligence.duckdb", read_only=True)
 
-db.sql("SELECT * FROM import_log").show()                     # one row per imported file
+db.sql("SELECT * FROM import_log").show()  # one row per imported file
 db.sql("""
     SELECT line_number, id, patentApplicationNumber, groupArtUnitNumber,
            documentCode, submissionDate
     FROM raw_office_action ORDER BY line_number LIMIT 10
-""").show()                                                    # the stored records
-db.sql("SELECT line_number, reason FROM rejected_record").show() # rejected records and why
+""").show()  # the stored records
+db.sql("SELECT line_number, reason FROM rejected_record").show()  # rejected records and why
 db.sql("SHOW TABLES").show()
 ```
 
@@ -119,6 +124,25 @@ On Windows PowerShell 5.1, run the last line as `ruff format . ; ruff check .`.
 
 The tests use small fixture files in `tests/fixtures/` and never the full sample file. The UI tests run Qt offscreen, so they need no display.
 
+## Build the macOS app
+
+CI builds the app; you don't need to build it yourself to release (architecture section 7, `KD-packaging-pyinstaller`).
+
+- **Every pull request** runs `ruff` and `pytest` on macOS and Windows (`.github/workflows/ci.yml`).
+- **A release** is a version tag on `main` that matches `__version__` in `src/patent_intelligence/__init__.py`, for example `v1.0.0`. The tag runs `.github/workflows/release.yml` on an Apple silicon runner. It builds the app, starts it once as a smoke test, wraps it in a DMG, and publishes a GitHub Release with the notes in `docs/release-notes/<version>.md`. Write that file and bump `__version__` in the pull request before tagging.
+- **A test build without a release:** in GitHub, go to Actions → Release → Run workflow, then download the DMG from the run's artifacts.
+
+To build on your own Apple silicon Mac:
+
+```sh
+pip install -r requirements-build.txt   # requirements.txt plus PyInstaller
+sh packaging/build_macos.sh             # → dist/USPTO-Patent-Intelligence-<version>-arm64.dmg
+```
+
+On Windows, `pyinstaller --noconfirm packaging/patent-intelligence.spec` builds a plain folder app (no `.app` or DMG). It's useful for checking that the bundle starts: `python packaging/smoke_test.py "dist/USPTO Patent Intelligence/USPTO Patent Intelligence.exe"`.
+
+The app is ad-hoc signed but not notarized (`OI-12`, `RISK-unsigned-app`), so macOS asks the user to confirm it once on first launch.
+
 ### Where things are
 
 | What | Where |
@@ -129,6 +153,9 @@ The tests use small fixture files in `tests/fixtures/` and never the full sample
 | Requirements, use cases, business rules | `docs/requirements/` |
 | Architecture and designs | `docs/design/` |
 | Team rules and the agent charter | `docs/team-contract.md`, `CLAUDE.md` |
+| Packaging (PyInstaller spec, build script, smoke test) | `packaging/` |
+| CI and release workflows | `.github/workflows/` |
+| User guide for the installed app | `docs/user-guide.md` |
 
 ## Troubleshooting
 
