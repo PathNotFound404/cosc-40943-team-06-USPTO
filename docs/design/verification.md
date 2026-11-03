@@ -30,7 +30,7 @@ classDiagram
     direction LR
     class SourcesView {
         <<new, ui>>
-        +show_sources(chart, category)
+        +show_sources(result, selection)
         +on_record_selected(record_id)
     }
     class RecordPageModel {
@@ -39,7 +39,7 @@ classDiagram
     }
     class Provenance {
         <<new, provenance>>
-        +records_for(chart, category, offset, limit) RecordPage
+        +records_for(result, selection, offset, limit) RecordPage
         +record_detail(record_id, import_id) RecordDetail
     }
     class Analytics {
@@ -58,8 +58,10 @@ classDiagram
 ```
 
 - `provenance/service.py` (new): `records_for` and `record_detail`.
-- `provenance/errors.py` (new): `SourceUnavailableError`.
-- `ui/sources_view.py` (new): the records table, the total count, and the single-record panel.
+- `provenance/errors.py` (new): `SourceUnavailableError` (2a) and `SourceLookupFailedError` (the use case's "Failure handling": a query fails, nothing is changed, and an error is shown).
+- `ui/sources_view.py` (new): the records table, the total count, and the single-record panel. It is the Sources tab of the main window (`UI-main-views`); asking for a source switches to it.
+- `ui/charts_view.py` (changed, [visualization](visualization.md)): each chart tab gets a "View source records" button that hands the whole chart to the Sources view (step 1, a visualization); a bar click already hands over one bar (step 1, a data point; create-visuals 6a).
+- `ui/main_window.py`, `app.py` (changed): add the Sources tab and wire the chart tabs to it.
 - `ui/record_page_model.py` (new): a Qt table model that fetches one page at a time from `records_for` as Malachi scrolls (2b; `KD-ui-framework`).
 - `analytics/service.py` (reused, [visualization](visualization.md)): `base_query`.
 - `storage` (reused, [intake](intake.md)): read cursors only.
@@ -78,18 +80,20 @@ sequenceDiagram
     participant AN as Analytics
     participant ST as Storage
     M->>SV: Selects a chart or one bar, asks for its source (step 1)
-    SV->>PV: records_for(chart, category, 0, page size)
+    SV->>PV: records_for(result, selection, 0, page size)
     PV->>ST: Are all the chart's import IDs still in the import log? (step 2)
-    alt an import is gone (2a)
+    PV->>ST: Count the selection's records within the chart's imports and weeks (step 2)
+    alt an import is gone, or the count differs from the chart's (2a)
         PV-->>SV: SourceUnavailableError
-        SV-->>M: Source data unavailable - recreate the chart (2a1, 2a2)
+        SV-->>M: Source data unavailable - recreate the chart? (2a1)
+        M->>SV: Recreate, or cancel (2a2)
     else present
         PV->>AN: base_query(metric, parameters) (step 2)
         PV->>ST: base query filtered to the category, joined to the import log, sorted, one page
         PV-->>SV: RecordPage - rows and total count
         SV-->>M: Records with counted field, source file, import date, and total (step 3, 2b1)
         opt scrolls past the page (2b)
-            SV->>PV: records_for(chart, category, next offset, page size)
+            SV->>PV: records_for(result, selection, next offset, page size)
         end
         opt selects one record (4a)
             M->>SV: Selects a record (4a)
@@ -110,8 +114,8 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 
 | Function | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
-| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | Chart identity, category (none means the whole chart), and for a two-way chart the series ([visualization.md](visualization.md), two-way metrics), offset, page size | `RecordPage`: rows and the total count. Each row: record ID, application number, the chart's counted field, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"). Sorted by source file, then record ID | 2a: `SourceUnavailableError`. 2b: not an error; more pages are fetched with a larger offset. |
-| `provenance.record_detail` | The UI | Record ID, import ID | `RecordDetail`: every stored field of that raw record as stored, plus source file name and import date | Record not found: `SourceUnavailableError`. |
+| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | The chart's identity, its `MetricResult` (metric, parameters, weeks, import IDs); the selection, `None` for the whole chart or a `Selection` of category and, for a two-way chart, series ([visualization.md](visualization.md), two-way metrics); offset, page size. A `None` category or series inside a `Selection` is the bar for a value the source did not give, not "all" | `RecordPage`: rows, the total count, and the counted fields' names. Each row: record ID, application number, the value of each counted field, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"). Sorted by source file, then record ID | 2a: `SourceUnavailableError` when an import is gone or the total differs from the chart's value. 2b: not an error; more pages are fetched with a larger offset. A failed query: `SourceLookupFailedError`. |
+| `provenance.record_detail` | The UI | Record ID, import ID | `RecordDetail`: every stored field of that raw record as stored, plus source file name and import date. When one import holds the record twice, the copy the staged dataset chose ([intake](intake.md), duplicate records) | Record not found: `SourceUnavailableError`. A failed query: `SourceLookupFailedError`. |
 
 ## Key decisions
 
@@ -122,6 +126,8 @@ _A decision that affects the whole system rather than this area is an architectu
 **Provenance filters the metric's own base query.** The rows listed are, by construction, the rows the bar counted, so the total shown always equals the bar's value (`QS-chart-traces-to-records`). Rejected: a hand-written "find records for this chart" query per metric, which can disagree with the chart.
 
 **A chart's source is unavailable if any of its imports is gone.** The chart records the import IDs it covered; if any is missing from the import log (the dataset was deleted, `DI-disposal`), Provenance refuses rather than listing fewer records than the bar shows. Rejected: listing whatever is left, which would show a count that silently disagrees with the chart Malachi is about to publish.
+
+**A chart whose data changed since it was drawn is refused too.** Charts are not recounted when a later import rebuilds the staged dataset, so Provenance limits the base query to the chart's own imports and weeks and compares the total with the chart's value; if they differ (a later import superseded some of its records), it raises `SourceUnavailableError` and asks for the chart to be recreated (2a). Rejected: listing the current records, whose count would disagree with the bar. Decided by the developer at build time, 2026-11-03.
 
 **The single-record view reads the raw record, not the staged row.** Malachi sees the values exactly as the USPTO supplied them, which is the evidence (`BR-no-data-alteration`, `KD-raw-and-staged`). Rejected: showing the staged row, which has been typed and renamed.
 
@@ -147,18 +153,25 @@ _[One row per flow: the main success scenario and **every** extension of every u
 |---|---|---|
 | UC-FEAT-verify-source main | integration | For every metric and every bar of a fixture's charts, the total returned equals the bar's value, and every row names its source file and import date (`QS-chart-traces-to-records`) |
 | UC-FEAT-verify-source main | unit | Rows are sorted by source file, then record ID |
+| UC-FEAT-verify-source main | integration | The bar for a value the source did not give lists only its own records, not the whole chart |
 | UC-FEAT-verify-source 2a | integration | After the import behind a chart is removed, `records_for` raises `SourceUnavailableError` and lists nothing |
+| UC-FEAT-verify-source 2a | integration | After a later import supersedes records a chart counted, `records_for` raises `SourceUnavailableError`; a later import that supersedes none leaves the chart's records listable |
+| UC-FEAT-verify-source 2a2 | unit (UI) | The Sources view shows the 2a message and offers to recreate the chart; accepting starts `UC-FEAT-create-visuals`, declining changes nothing |
+| UC-FEAT-verify-source failure | unit | A failing query raises `SourceLookupFailedError` and logs no record |
 | UC-FEAT-verify-source 2b | unit | With more rows than a page, the first page holds one page of rows, the total is the full count, and consecutive pages neither skip nor repeat a row |
 | UC-FEAT-verify-source 4a | unit | `record_detail` returns every stored field, character for character as in the fixture, plus the source file |
 | UC-FEAT-verify-source read only | integration | Viewing sources leaves every table's row count unchanged (POST-2) |
 | UC-FEAT-verify-source counted field | unit | Each row shows the field the chart counted (`FR-CHART-counted-field`) |
 | UC-FEAT-create-visuals 6a | integration | Clicking a bar opens the Sources view with that bar's records |
+| UC-FEAT-verify-source step 1 | unit (UI) | A chart tab's "View source records" opens the Sources view with the whole chart's records |
 
 ## Changes to the architecture-of-record
 
 _[Designing an area against real code is when the architecture's guesses meet reality. If this design needs a component the map does not have, moves a responsibility, or adds a dependency, **change [the architecture-of-record](architectural-design.md) in the same pull request** and list each change here in one line. If nothing changed, write "None". A design that silently disagrees with the architecture leaves two maps, and the agent will follow whichever it reads last.]_
 
 None.
+
+**Changed at build time (2026-11-03):** the `Selection` argument replaces "category none means the whole chart", which collided with the bar for a value the source did not give; the stale-chart refusal; `SourceLookupFailedError`; and the entry points (the chart tab button and the Sources tab), which the design left unnamed.
 
 ## Open questions & risks
 
