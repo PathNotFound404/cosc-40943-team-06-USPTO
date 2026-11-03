@@ -75,12 +75,26 @@ def test_every_bar_lists_as_many_records_as_its_value_each_with_its_source(
                 assert record.counted_values == expected
 
 
-def test_rows_are_sorted_by_source_file_then_record_id(two_weeks_database) -> None:
+def test_rows_are_sorted_by_source_file_application_number_and_submission_date(
+    two_weeks_database,
+) -> None:
     result = chart(two_weeks_database, METRICS[0])
     records = every_record(two_weeks_database, result, None)
     assert len({record.source_file for record in records}) == 2
-    keys = [(record.source_file, record.record_id) for record in records]
+    keys = [(r.source_file, r.application_number, r.submission_date, r.record_id) for r in records]
     assert keys == sorted(keys)
+
+
+@pytest.mark.parametrize("metric", METRICS, ids=lambda metric: metric.name)
+def test_each_row_shows_the_records_own_readable_fields(staged_database, metric) -> None:
+    by_id = {record["id"]: record for record in fixture_records()}
+    for row in every_record(staged_database, chart(staged_database, metric), None):
+        source = by_id[row.record_id]
+        assert row.application_number == source["patentApplicationNumber"]
+        assert row.invention_title == source.get("inventionTitle")  # one has none
+        assert row.document_code == source["documentCode"]
+        assert row.art_unit == str(source["groupArtUnitNumber"])
+        assert row.submission_date.isoformat() == source["submissionDate"][:10]
 
 
 def test_the_bar_for_a_value_the_source_did_not_give_lists_only_its_own_records(
@@ -252,6 +266,9 @@ def test_when_an_import_holds_a_record_twice_the_chosen_copy_is_shown(database, 
     import_file(database, path, IMPORT_TIME, no_progress)
     build_staged_dataset(database)
     assert dict(record_detail(database, newer["id"], 1).fields)["oaText"] == "the newer copy"
+    result = analytics.run_metric(database, "office-actions-by-document-code", {})
+    (row,) = every_record(database, result, None)  # listed once, not once per copy
+    assert row.record_id == newer["id"]
 
 
 # --- Failure handling and logging (8.2.7) -----------------------------------------------

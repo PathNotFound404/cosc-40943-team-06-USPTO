@@ -12,6 +12,9 @@ from patent_intelligence.provenance import RecordPage, Selection, SourceRecord
 from patent_intelligence.storage import Database
 
 PAGE_SIZE = 200
+# Fields a reader recognizes a record by, after the counted fields (the use case's "Source
+# display strategy"). One the chart counted is not shown twice.
+_CONTEXT_FIELDS = ("Document Code", "Art Unit", "Submission Date")
 _Index = QModelIndex | QPersistentModelIndex
 
 
@@ -36,10 +39,14 @@ class RecordPageModel(QAbstractTableModel):
         self._page_size = page_size
         self.records: list[SourceRecord] = list(first_page.records)
         self.total = first_page.total
+        self._context = tuple(
+            field for field in _CONTEXT_FIELDS if field not in first_page.counted_fields
+        )
         self.headers = (
-            "Record ID",
             "Application Number",
+            "Invention Title",
             *first_page.counted_fields,
+            *self._context,
             "Source file",
             "Import date",
         )
@@ -59,7 +66,9 @@ class RecordPageModel(QAbstractTableModel):
         return None
 
     def data(self, index: _Index, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
-        if role != Qt.ItemDataRole.DisplayRole or not index.isValid():
+        # The tooltip gives a value in full when its column is too narrow to show it.
+        shown = (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole)
+        if role not in shown or not index.isValid():
             return None
         return self.row_text(index.row())[index.column()]
 
@@ -71,12 +80,19 @@ class RecordPageModel(QAbstractTableModel):
             f"No {field} in the source" if value is None else value
             for field, value in zip(fields, record.counted_values, strict=False)
         )
+        submitted = record.submission_date
+        context = {
+            "Document Code": record.document_code or "",
+            "Art Unit": record.art_unit or "",
+            "Submission Date": submitted.isoformat() if submitted else "",  # YYYY-MM-DD (8.2.2)
+        }
         return (
-            record.record_id,
             record.application_number or "",
+            record.invention_title or "",
             *counted,
+            *(context[field] for field in self._context),
             record.source_file,
-            record.import_date.isoformat(),  # YYYY-MM-DD (8.2.2)
+            record.import_date.isoformat(),
         )
 
     def canFetchMore(self, parent: _Index = QModelIndex()) -> bool:  # noqa: B008, N802

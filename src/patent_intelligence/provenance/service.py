@@ -26,12 +26,18 @@ class Selection:
 
 @dataclass(frozen=True)
 class SourceRecord:
-    """One counted row: the record, the value of each counted field, and where it came from."""
+    """One counted row: what a reader recognizes the record by, the value of each counted
+    field, and where it came from (the use case's "Source display strategy"). `record_id` and
+    `import_id` are what `record_detail` takes. A value the source did not give is None."""
 
     record_id: str
-    application_number: str | None
-    counted_values: tuple[str | None, ...]
     import_id: int
+    application_number: str | None
+    invention_title: str | None
+    counted_values: tuple[str | None, ...]
+    document_code: str | None
+    art_unit: str | None
+    submission_date: date | None
     source_file: str
     import_date: date
 
@@ -65,9 +71,9 @@ def records_for(
     limit: int,
 ) -> RecordPage:
     """The rows `result` counted for `selection` (None for the whole chart), sorted by source
-    file then record ID, one page from `offset`. Raises SourceUnavailableError when an import
-    the chart counted is gone or the rows no longer add up to the chart (2a), and
-    SourceLookupFailedError when the query fails."""
+    file, Application Number, Submission Date, then record ID, one page from `offset`. Raises
+    SourceUnavailableError when an import the chart counted is gone or the rows no longer add
+    up to the chart (2a), and SourceLookupFailedError when the query fails."""
     metric = result.metric
     two_way = metric.series_field is not None
     query, values = analytics.base_query(metric.name, result.parameters, result.weeks)
@@ -81,7 +87,10 @@ def records_for(
             filters.append("series IS NOT DISTINCT FROM $selected_series::VARCHAR")
             values["selected_series"] = selection.series
     selected = f"SELECT * FROM ({query}) WHERE {' AND '.join(filters)}"
-    counted = "s.category, s.series" if two_way else "s.category"
+    counted = "category, series" if two_way else "category"
+    # The use case's sort; the record ID and the rest break ties, so pages never skip or
+    # repeat a row (2b).
+    order = f"file_name, application_number, submitted, record_id, import_id, {counted}"
 
     cursor = database.cursor()
     try:
@@ -102,13 +111,31 @@ def records_for(
                 raise SourceUnavailableError()
             rows = cursor.execute(
                 f"""
-                SELECT s.record_id, o.application_number, s.import_id, i.file_name,
-                    i.import_time::DATE, {counted}
-                FROM ({selected}) AS s
-                JOIN import_log AS i ON i.import_id = s.import_id
-                LEFT JOIN staged_office_action AS o ON o.record_id = s.record_id
-                ORDER BY i.file_name, s.record_id, i.import_id, {counted}
-                LIMIT $page_limit OFFSET $page_offset
+                WITH page AS (
+                    SELECT s.*, o.application_number, o.document_code, o.art_unit,
+                        o.submission_date::DATE AS submitted, i.file_name,
+                        i.import_time::DATE AS imported
+                    FROM ({selected}) AS s
+                    JOIN import_log AS i ON i.import_id = s.import_id
+                    LEFT JOIN staged_office_action AS o ON o.record_id = s.record_id
+                ),
+                one_page AS (
+                    SELECT * FROM page ORDER BY {order} LIMIT $page_limit OFFSET $page_offset
+                ),
+                titles AS (
+                    SELECT r.id AS title_id, r.import_id AS title_import, r.inventionTitle
+                    FROM raw_office_action AS r
+                    WHERE r.id IN (SELECT record_id FROM one_page)
+                    QUALIFY row_number() OVER (
+                        PARTITION BY r.id, r.import_id ORDER BY {_CHOSEN_COPY_ORDER}
+                    ) = 1
+                )
+                SELECT record_id, import_id, application_number, inventionTitle, document_code,
+                    art_unit, submitted, file_name, imported, {counted}
+                FROM one_page
+                LEFT JOIN titles
+                    ON title_id = one_page.record_id AND title_import = one_page.import_id
+                ORDER BY {order}
                 """,
                 {**values, "page_limit": limit, "page_offset": offset},
             ).fetchall()
@@ -122,8 +149,30 @@ def records_for(
     if two_way:
         counted_fields += (metric.series_field,)
     records = tuple(
-        SourceRecord(record_id, application_number, tuple(values), import_id, file, imported)
-        for record_id, application_number, import_id, file, imported, *values in rows
+        SourceRecord(
+            record_id,
+            import_id,
+            application_number,
+            title,
+            tuple(counted_values),
+            document_code,
+            art_unit,
+            submitted,
+            file,
+            imported,
+        )
+        for (
+            record_id,
+            import_id,
+            application_number,
+            title,
+            document_code,
+            art_unit,
+            submitted,
+            file,
+            imported,
+            *counted_values,
+        ) in rows
     )
     log.info("Listed %d of %d source records of %s", len(records), total, metric.name)
     return RecordPage(records, total, counted_fields)

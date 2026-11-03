@@ -38,16 +38,27 @@ def test_a_bar_lists_its_records_with_the_counted_field_source_file_and_import_d
 ) -> None:
     view, calls = make_view(staged_database)
     view.show_sources(document_codes(staged_database), Selection("CTFR"))
+    # Readable fields, not the record ID; the counted Document Code is not repeated.
     assert view.model.headers == (
-        "Record ID",
         "Application Number",
+        "Invention Title",
         "Document Code",
+        "Art Unit",
+        "Submission Date",
         "Source file",
         "Import date",
     )
     rows = shown_rows(view)
     assert len(rows) == 9
-    assert {row[2:] for row in rows} == {("CTFR", FIXTURE.name, IMPORT_TIME.strftime("%Y-%m-%d"))}
+    assert {(row[2], *row[-2:]) for row in rows} == {
+        ("CTFR", FIXTURE.name, IMPORT_TIME.strftime("%Y-%m-%d"))
+    }
+    by_id = {record["id"]: record for record in fixture_records()}
+    for record, row in zip(view.model.records, rows, strict=True):
+        source = by_id[record.record_id]
+        assert row[:2] == (source["patentApplicationNumber"], source.get("inventionTitle", ""))
+        assert row[3:5] == (str(source["groupArtUnitNumber"]), source["submissionDate"][:10])
+        assert record.record_id not in row
     assert view.total.text().startswith("9 records")
     assert "Office actions by Document Code: CTFR" in view.heading.text()
     assert calls.offers == []
@@ -58,7 +69,12 @@ def test_the_whole_chart_lists_every_record_it_counted(qt_app, staged_database) 
     view, _ = make_view(staged_database)
     view.show_sources(result, None)
     assert view.model.rowCount() == result.total
-    assert view.model.headers[2:4] == ("Technology Center", "USPTO rejection tag")
+    assert view.model.headers[2:6] == (
+        "Technology Center",
+        "USPTO rejection tag",
+        "Document Code",
+        "Art Unit",
+    )
     assert ("2800", "No USPTO rejection tag in the source") in {
         row[2:4] for row in shown_rows(view)
     }
@@ -74,7 +90,7 @@ def test_records_are_read_a_page_at_a_time_with_the_total_shown(qt_app, staged_d
     assert view.total.text().startswith("20 records")
     while view.model.canFetchMore():
         view.model.fetchMore()
-    ids = [row[0] for row in shown_rows(view)]
+    ids = [record.record_id for record in view.model.records]
     assert len(ids) == len(set(ids)) == 20
 
 
@@ -93,8 +109,12 @@ def test_selecting_a_record_shows_every_stored_field_and_its_source_file(
     assert fields["oaText"] == source["oaText"]
     assert fields["patentApplicationNumber"] == source["patentApplicationNumber"]
     assert set(source) <= set(fields)
+    assert fields["id"] == record.record_id  # the record ID is still shown here
     assert FIXTURE.name in view.record_heading.text()
-    assert record.record_id in view.record_heading.text()
+    assert source["patentApplicationNumber"] in view.record_heading.text()
+    # The letter text in full, character for character as stored.
+    assert view.letter_text.toPlainText() == source["oaText"]
+    assert view.letter_text.isReadOnly()
 
 
 # --- 2a: the source data is unavailable -------------------------------------------------

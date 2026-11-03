@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidget,
     QMessageBox,
+    QPlainTextEdit,
     QSplitter,
     QTableView,
     QTableWidget,
@@ -25,6 +26,10 @@ from patent_intelligence.errors import AppError
 from patent_intelligence.provenance import Selection, SourceUnavailableError
 from patent_intelligence.storage import Database
 from patent_intelligence.ui.record_page_model import PAGE_SIZE, RecordPageModel
+
+# Long Invention Titles are cut to this width; the full title is in the tooltip and above the
+# selected record.
+_TITLE_WIDTH = 360
 
 # Asks whether to create the visualization again; True to create it (2a1-2a2).
 RecreateOffer = Callable[[QWidget, str], bool]
@@ -85,12 +90,25 @@ class SourcesView(QWidget):
         self.record.setHorizontalHeaderLabels(["Field", "Stored value"])
         self.record.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.record.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.record.setWordWrap(True)
+        self.record.setWordWrap(False)  # long values are read in full in the letter text pane
+        # The letter text in full and readable, as stored (4a1).
+        self.letter_text = QPlainTextEdit()
+        self.letter_text.setReadOnly(True)
+        self.letter_text.setPlaceholderText("Select a record to read its office action letter.")
+        letter = QWidget()
+        letter_layout = QVBoxLayout(letter)
+        letter_layout.setContentsMargins(0, 0, 0, 0)
+        letter_layout.addWidget(QLabel("Office action letter text"))
+        letter_layout.addWidget(self.letter_text)
+        fields_and_letter = QSplitter(Qt.Orientation.Horizontal)
+        fields_and_letter.addWidget(self.record)
+        fields_and_letter.addWidget(letter)
+        fields_and_letter.setSizes([400, 600])
         detail = QWidget()
         detail_layout = QVBoxLayout(detail)
         detail_layout.setContentsMargins(0, 0, 0, 0)
         detail_layout.addWidget(self.record_heading)
-        detail_layout.addWidget(self.record)
+        detail_layout.addWidget(fields_and_letter, stretch=1)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
         splitter.addWidget(self.table)
@@ -116,12 +134,18 @@ class SourcesView(QWidget):
             self._database, result, selection, first, self._show_error, self._page_size
         )
         self.table.setModel(self.model)
-        self.table.resizeColumnsToContents()  # record IDs are long; show them whole
+        self.table.resizeColumnsToContents()
+        title_column = self.model.headers.index("Invention Title")
+        if self.table.columnWidth(title_column) > _TITLE_WIDTH:
+            self.table.setColumnWidth(title_column, _TITLE_WIDTH)
         self.table.selectionModel().currentRowChanged.connect(
             lambda current, _previous: self.on_record_selected(current.row())
         )
         noun = "record" if first.total == 1 else "records"
-        self.total.setText(f"{first.total:,} {noun}, sorted by source file, then record ID")
+        self.total.setText(
+            f"{first.total:,} {noun}, sorted by source file, then Application Number. "
+            "Select one to read it in full."
+        )
 
     def on_record_selected(self, row: int) -> None:
         """4a: every stored field of the record in `row`, as stored, and its source file."""
@@ -133,10 +157,13 @@ class SourcesView(QWidget):
         except AppError as error:
             self._show_error(error)
             return
+        title = f", {chosen.invention_title}" if chosen.invention_title else ""
         self.record_heading.setText(
-            f"Record {detail.record_id}, from {detail.source_file}, "
-            f"imported {detail.import_date.isoformat()}"
+            f"Application Number {chosen.application_number or ''}{title}. "
+            f"From {detail.source_file}, imported {detail.import_date.isoformat()}."
         )
+        letter_text = dict(detail.fields).get("oaText")
+        self.letter_text.setPlainText("" if letter_text is None else letter_text)
         self.record.setRowCount(len(detail.fields))
         for index, (name, value) in enumerate(detail.fields):
             self.record.setItem(index, 0, QTableWidgetItem(name))
@@ -157,6 +184,7 @@ class SourcesView(QWidget):
         self.notices.hide()
         self.record_heading.clear()
         self.record.setRowCount(0)
+        self.letter_text.clear()
 
     def _show_error(self, error: AppError) -> None:
         """The one place this view's actions show a failure (8.2.1)."""
@@ -173,3 +201,4 @@ class SourcesView(QWidget):
         self.total.clear()
         self.record.setRowCount(0)
         self.record_heading.clear()
+        self.letter_text.clear()
