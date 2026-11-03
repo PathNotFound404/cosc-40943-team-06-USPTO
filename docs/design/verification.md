@@ -59,7 +59,7 @@ classDiagram
 
 - `provenance/service.py` (new): `records_for` and `record_detail`.
 - `provenance/errors.py` (new): `SourceUnavailableError` (2a) and `SourceLookupFailedError` (the use case's "Failure handling": a query fails, nothing is changed, and an error is shown).
-- `ui/sources_view.py` (new): the records table, the total count, and the single-record panel. It is the Sources tab of the main window (`UI-main-views`); asking for a source switches to it.
+- `ui/sources_view.py` (new): the records table, the total count, and the single-record panel: every stored field, and beside them the letter text (`oaText`) in full and readable (4a1). It is the Sources tab of the main window (`UI-main-views`); asking for a source switches to it.
 - `ui/charts_view.py` (changed, [visualization](visualization.md)): each chart tab gets a "View source records" button that hands the whole chart to the Sources view (step 1, a visualization); a bar click already hands over one bar (step 1, a data point; create-visuals 6a).
 - `ui/main_window.py`, `app.py` (changed): add the Sources tab and wire the chart tabs to it.
 - `ui/record_page_model.py` (new): a Qt table model that fetches one page at a time from `records_for` as Malachi scrolls (2b; `KD-ui-framework`).
@@ -114,7 +114,7 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 
 | Function | Caller (who may) | Request | Success | Errors, by extension |
 |---|---|---|---|---|
-| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | The chart's identity, its `MetricResult` (metric, parameters, weeks, import IDs); the selection, `None` for the whole chart or a `Selection` of category and, for a two-way chart, series ([visualization.md](visualization.md), two-way metrics); offset, page size. A `None` category or series inside a `Selection` is the bar for a value the source did not give, not "all" | `RecordPage`: rows, the total count, and the counted fields' names. Each row: record ID, application number, the value of each counted field, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"). Sorted by source file, then record ID | 2a: `SourceUnavailableError` when an import is gone or the total differs from the chart's value. 2b: not an error; more pages are fetched with a larger offset. A failed query: `SourceLookupFailedError`. |
+| `provenance.records_for` | The UI (Sources view, and the chart tabs for create-visuals 6a) | The chart's identity, its `MetricResult` (metric, parameters, weeks, import IDs); the selection, `None` for the whole chart or a `Selection` of category and, for a two-way chart, series ([visualization.md](visualization.md), two-way metrics); offset, page size. A `None` category or series inside a `Selection` is the bar for a value the source did not give, not "all" | `RecordPage`: rows, the total count, and the counted fields' names. Each row: Application Number, Invention Title, the value of each counted field, Document Code, Art Unit, Submission Date, source file name, import date ([use case](../requirements/use-cases.md) "Source display strategy"), and the record ID and import ID that `record_detail` takes. Sorted by source file, Application Number, Submission Date, then record ID | 2a: `SourceUnavailableError` when an import is gone or the total differs from the chart's value. 2b: not an error; more pages are fetched with a larger offset. A failed query: `SourceLookupFailedError`. |
 | `provenance.record_detail` | The UI | Record ID, import ID | `RecordDetail`: every stored field of that raw record as stored, plus source file name and import date. When one import holds the record twice, the copy the staged dataset chose ([intake](intake.md), duplicate records) | Record not found: `SourceUnavailableError`. A failed query: `SourceLookupFailedError`. |
 
 ## Key decisions
@@ -130,6 +130,8 @@ _A decision that affects the whole system rather than this area is an architectu
 **A chart whose data changed since it was drawn is refused too.** Charts are not recounted when a later import rebuilds the staged dataset, so Provenance limits the base query to the chart's own imports and weeks and compares the total with the chart's value; if they differ (a later import superseded some of its records), it raises `SourceUnavailableError` and asks for the chart to be recreated (2a). Rejected: listing the current records, whose count would disagree with the bar. Decided by the developer at build time, 2026-11-03.
 
 **The single-record view reads the raw record, not the staged row.** Malachi sees the values exactly as the USPTO supplied them, which is the evidence (`BR-no-data-alteration`, `KD-raw-and-staged`). Rejected: showing the staged row, which has been typed and renamed.
+
+**The Invention Title comes from the raw record, not the staged dataset.** The staged views hold only what charts count, so Provenance reads the title from the raw copy the staged dataset chose (one per record ID and import, by the [intake](intake.md) duplicate order), which keeps one row per counted row. Rejected: adding the title to the staged views, which would change `UC-FEAT-clean-data` for a field no chart counts.
 
 **Pages are fetched on demand.** The total is counted once, and rows are read a page at a time as the table scrolls. Rejected: loading every row, since one bar of a year's data can hold tens of thousands of office actions including their letter text.
 
@@ -152,7 +154,8 @@ _[One row per flow: the main success scenario and **every** extension of every u
 | Use case, flow | Level | Asserts |
 |---|---|---|
 | UC-FEAT-verify-source main | integration | For every metric and every bar of a fixture's charts, the total returned equals the bar's value, and every row names its source file and import date (`QS-chart-traces-to-records`) |
-| UC-FEAT-verify-source main | unit | Rows are sorted by source file, then record ID |
+| UC-FEAT-verify-source main | unit | Rows are sorted by source file, Application Number, Submission Date, then record ID |
+| UC-FEAT-verify-source main | integration | Each row's Application Number, Invention Title, Document Code, Art Unit, and Submission Date are the record's own, as in the fixture; a record held twice in one import is listed once |
 | UC-FEAT-verify-source main | integration | The bar for a value the source did not give lists only its own records, not the whole chart |
 | UC-FEAT-verify-source 2a | integration | After the import behind a chart is removed, `records_for` raises `SourceUnavailableError` and lists nothing |
 | UC-FEAT-verify-source 2a | integration | After a later import supersedes records a chart counted, `records_for` raises `SourceUnavailableError`; a later import that supersedes none leaves the chart's records listable |
@@ -160,6 +163,7 @@ _[One row per flow: the main success scenario and **every** extension of every u
 | UC-FEAT-verify-source failure | unit | A failing query raises `SourceLookupFailedError` and logs no record |
 | UC-FEAT-verify-source 2b | unit | With more rows than a page, the first page holds one page of rows, the total is the full count, and consecutive pages neither skip nor repeat a row |
 | UC-FEAT-verify-source 4a | unit | `record_detail` returns every stored field, character for character as in the fixture, plus the source file |
+| UC-FEAT-verify-source 4a | unit (UI) | Selecting a record shows its letter text in full, as stored |
 | UC-FEAT-verify-source read only | integration | Viewing sources leaves every table's row count unchanged (POST-2) |
 | UC-FEAT-verify-source counted field | unit | Each row shows the field the chart counted (`FR-CHART-counted-field`) |
 | UC-FEAT-create-visuals 6a | integration | Clicking a bar opens the Sources view with that bar's records |
@@ -171,7 +175,7 @@ _[Designing an area against real code is when the architecture's guesses meet re
 
 None.
 
-**Changed at build time (2026-11-03):** the `Selection` argument replaces "category none means the whole chart", which collided with the bar for a value the source did not give; the stale-chart refusal; `SourceLookupFailedError`; and the entry points (the chart tab button and the Sources tab), which the design left unnamed.
+**Changed at build time (2026-11-03):** the `Selection` argument replaces "category none means the whole chart", which collided with the bar for a value the source did not give; the stale-chart refusal; `SourceLookupFailedError`; and the entry points (the chart tab button and the Sources tab), which the design left unnamed. Later the same day, at the developer's request: the listed fields and sort follow the revised "Source display strategy" (Application Number and Invention Title in place of the record ID), and the single-record view shows the letter text (`OI-21`).
 
 ## Open questions & risks
 

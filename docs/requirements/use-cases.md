@@ -33,6 +33,7 @@ _Within one use case, `PRE-1`, `POST-1`, and the step numbers are local and may 
 | 2026-09-25 | 1.0 | Create major use cases week 5. The first 4 most substantial use cases defined. | Tanner, Bradley |
 | 2026-10-26 | 1.1 | Filled introduction and use case list; removed worked example; added `UC-FEAT-verify-source` and `UC-FEAT-export-visuals`; completed Associated Information and fixed extension numbering | Tanner |
 | 2026-10-28 | 1.2 | Marked `UC-FEAT-query-ai` deferred and linked it to `FEAT-Query-AI`; added business rules to `UC-FEAT-create-visuals`; linked open issues; fixed glossary references and bracketed dates | Cody Pinkston |
+| 2026-11-03 | 1.4 | `UC-FEAT-verify-source`: the source display strategy names the fields a reader recognizes (Application Number and Invention Title rather than the record ID) and adds the letter text to the single-record view (4a1); sorted by source file, then Application Number (`OI-21`) | Cody Pinkston |
 | 2026-10-31 | 1.3 | `UC-FEAT-create-visuals`: the user first chooses the imported data every visualization counts (by imported file or by calendar week of Submission Date), and can change it, or the Art Unit visualization's Technology Center, after the visualizations are shown (extensions 6b, 6c) | Cody Pinkston |
 
 ---
@@ -471,9 +472,9 @@ Failure handling: cleaning runs on a working copy. If execution fails, the chang
 
 **Associated Information:**
 
-Source display strategy: for each record, the record identifier (such as application number), the fields used in the visualization, the source file name, and the import date (`DI-source-tracking`).
+Source display strategy: for each record, its Application Number and Invention Title, the fields used in the visualization, its Document Code, Art Unit, and Submission Date, the source file name, and the import date (`DI-source-tracking`). The record ID is not listed, because it means nothing to a reader; it is shown with every other stored field when a single record is selected (4a1), together with the office action's letter text in full. Which columns Malachi wants is to be confirmed (`OI-21`).
 
-Sort criteria: source file, then record identifier, ascending.
+Sort criteria: source file, then Application Number, then Submission Date, ascending; the record ID breaks a tie so that pages never skip or repeat a record.
 
 Failure handling: this use case only reads data. If execution fails, nothing is changed and the system shows an error.
 
