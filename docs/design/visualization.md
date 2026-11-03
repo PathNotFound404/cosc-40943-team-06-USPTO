@@ -66,7 +66,7 @@ classDiagram
     class Export {
         <<new, charts>>
         +find_conflicts(charts, folder) List
-        +export_charts(charts, folder, decisions, generated_at) ExportSummary
+        +export_charts(charts, folder, decisions, generated_at, source_files) ExportSummary
     }
     class Storage {
         <<reused, storage>>
@@ -82,6 +82,7 @@ classDiagram
     ChartsView --> Charts
     ChartsView --> Provenance
     ExportView --> Export
+    ExportView --> Analytics
     Analytics --> Metric
     Analytics --> Storage
     Export --> Charts
@@ -91,11 +92,11 @@ classDiagram
 - `analytics/service.py` (new): `list_metrics`, `run_metric`, `base_query`, and `technology_centers` (the choices for the Art Unit metric's parameter). Counts are `count(*)` grouped by category, and by category and series for a two-way metric, over the base query, run in DuckDB ([8.2.4](architectural-design.md#82-other-concepts)). Also returns the import IDs covered and the earliest and latest submission dates (the chart's date range). `Weeks` is what a chart counts (6b): all staged office actions, those staged from chosen imports, or those submitted in chosen calendar weeks; `base_query` applies it, so the counts and Provenance read the same rows. `imported_files` and `submission_weeks` list the choices with their office action counts.
 - `analytics/errors.py` (new): `StagedDataMissingError`, `MetricFailedError`.
 - `charts/draw.py` (new): turns a `MetricResult` into a `Chart`, which holds the matplotlib figure, the chart's identity (metric name, parameters, import IDs, counted field, date range), and each bar or segment as a `Bar` with its category and series. Every chart shows its counted field on screen. Categories are ordered largest first; a series value beyond the eight colors is a drawing failure (5a) rather than two series sharing a color.
-- `charts/export.py` (new): `find_conflicts` and `export_charts`. Adds the label block (title, data source, date range, generation date, counted field) and writes PNG.
+- `charts/export.py` (new): `find_conflicts` and `export_charts`. Draws each chart again from its result, so the figure on screen is unchanged, and places it, as pixels, above a label strip (data source, date range, generation date; the title and counted field are already on the chart), then writes PNG through a temporary file, so a failed write leaves no partial file and never destroys the file it was to replace.
 - `charts/errors.py` (new): `FolderNotWritableError`.
 - `ui/charts_view.py` (new): the Visualizations tab. `MetricChooser` lists every metric checked, with a Technology Center drop-down beside the Art Unit metric, starting at the first staged (steps 3 and 4). Before it, `WeekChooser` asks which imported data to chart (steps 3 and 4), starting at the data charted now. `WeekFilter` is the choice itself: all imported data, imported files, or calendar weeks, each a checklist that starts all checked; the same filter sits above the tabs once there are charts, and "Apply to all visualizations" counts every chart again (6b). `ChartsView.weeks` is the one choice every chart counts; creating charts later brings those already shown to it. One tab per chart (step 6); a chart created again with the same metric replaces its tab. Each tab is a `ChartPage`; the Art Unit chart's has a Technology Center drop-down that redraws it as soon as it changes (6c). `ChartsView.charts` is the session's list of charts, which Export reads (step 7). A click on a bar or segment calls the drill-down hook with the chart, category, and series; `app.py` wires it to Provenance when `UC-FEAT-verify-source` is built, and until then bars are not selectable.
 - `jobs/cleaning_job.py` (new): `CleaningJob` runs `build_staged_dataset` on the Job Runner when the user chooses to clean from 2a2; the Import view shows its progress and result with the other jobs'.
-- `ui/export_view.py` (new): the list of charts open in this session, the folder picker, and the overwrite-or-keep-both question (5b1).
+- `ui/export_view.py` (new): the Export tab: the list of charts open in this session, all checked; the folder picker; and the overwrite-or-keep-both question (5b1). It looks up the data source file names with `analytics.imported_files` and passes them to `export_charts`, because a chart holds only its import IDs and Export does not read the database.
 - `storage` (reused from [intake.md](intake.md)): read cursors only; this area never writes to the database.
 
 ### Release 1.0 metrics (proposed, pending `OI-1`)
@@ -212,7 +213,7 @@ sequenceDiagram
                 EV-->>M: Overwrite or keep both? (5b1)
                 M->>EV: Decision per file
             end
-            EV->>EX: export_charts(charts, folder, decisions, generated_at) (step 5)
+            EV->>EX: export_charts(charts, folder, decisions, generated_at, source_files) (step 5)
             loop each chart
                 EX->>FS: Write PNG with title, data source, date range, generation date, counted field
                 alt write fails (5a)
@@ -243,7 +244,7 @@ There is no network API ([8.2.3](architectural-design.md#82-other-concepts)). Er
 | `analytics.base_query` | Provenance only | Metric name, parameter values, `Weeks` (the chart's own) | The base query and its parameters, so Provenance filters the same rows the chart counted (`KD-charts-from-sql`). Rows: record ID, category, series (two-way metrics only), import ID, submission date | Unknown metric or wrong parameters: `MetricFailedError`. |
 | `charts.draw` | The UI | `MetricResult` | `Chart`: figure plus identity (metric, parameters, import IDs, counted field, date range), and each bar or segment with the category and series it shows | Drawing failure is a 5a failure for that metric. |
 | `charts.find_conflicts` | The Export view | Charts, folder | The file names that already exist | 4a: `FolderNotWritableError`. |
-| `charts.export_charts` | The Export view | Charts, folder, overwrite or keep-both decision per conflict, generation date (passed in, [8.2.2](architectural-design.md#82-other-concepts)) | `ExportSummary`: path of each saved file, and each chart that failed with its reason | 4a: `FolderNotWritableError`. 5a: per chart, in the summary, not raised. |
+| `charts.export_charts` | The Export view | Charts, folder, overwrite or keep-both decision per conflict (a taken name with no decision is kept, never overwritten), generation date (passed in, [8.2.2](architectural-design.md#82-other-concepts)), the weekly file name of each import ID (from `analytics.imported_files`) | `ExportSummary`: path of each saved file, and each chart that failed with its reason | 4a: `FolderNotWritableError`. 5a: per chart, in the summary, not raised. |
 
 ## Key decisions
 
@@ -259,7 +260,7 @@ _A decision that affects the whole system rather than this area is an architectu
 
 **"Staged for export" means kept in the session.** Charts created in this session are held in memory, and the Export view lists them. Rejected: saving charts in the database, which adds a table and a lifecycle nobody asked for. Architecture section 7 already says charts on screen are lost on restart and recomputed.
 
-**The label is drawn into the image.** Title, data source (the USPTO weekly office action file names), date range, generation date, and counted field are drawn below the chart, so the label survives being copied into a post. Rejected: file metadata, which LinkedIn and Instagram strip.
+**The label is drawn into the image.** Title, data source (the USPTO weekly office action file names), date range, generation date, and counted field are in the image, so the label survives being copied into a post. The title and counted field are on the chart already; the rest is a strip below it. The chart is rendered to pixels and placed above the strip, because a two-way chart's legend sits at the figure's lower edge and overlapped a label drawn in the same figure (found during the build, 2026-11-03). Rejected: file metadata, which LinkedIn and Instagram strip.
 
 **A two-way metric is the same base query with a series column, drawn as 100% stacked bars.** Each Technology Center is one horizontal bar split into the shares of its series, with its total (n) beside its name; a segment shows its share where it fits, and selecting one drills down to that category and series. Rejected: stacking counts, where Technology Center 3900 (19 office actions in the sample) vanishes beside 3700 (1,402); grouped bars, which give 70 bars for 10 Technology Centers and 7 types; and a separate cross-tab query, which breaks the base-query decision above. Shares are computed from the counts on screen, not stored.
 
@@ -269,7 +270,7 @@ _A decision that affects the whole system rather than this area is an architectu
 
 **The Art Unit chart is one tab whose Technology Center changes on the tab.** The drop-down redraws the chart as soon as it changes, so the user can flip through Technology Centers; creating the chart again replaces that tab with the chooser's Technology Center. Rejected: a tab per Technology Center, which fills the tab bar with up to ten Art Unit tabs.
 
-**One image size.** PNG, sized for a LinkedIn post (`INT-export`). The exact pixel size is not specified anywhere; see Open questions.
+**One image width.** PNG, 1200 pixels wide (the chart's 8 inches at 150 dpi), with the height the chart and its label need (chosen by the developer during the build, 2026-11-03, pending `OI-22`). Rejected: a fixed 1200 × 1200 square, which squeezes a chart with dozens of Art Units.
 
 ## Data model
 
@@ -326,8 +327,9 @@ _[What this design could not settle and who can, and what could go wrong that yo
 - **Rejection tag or letter text (`OI-7`).** `rejections-by-type` counts the tag and says so. A letter-text metric needs the client to define what text counts as citing a section.
 - **Pendency (`OI-8`).** Not designed until the formula is chosen.
 - **Export formats (`OI-2`).** PNG only, per `INT-export`.
-- **Image size.** `INT-export` says "sized for LinkedIn posts" without a size. Propose 1200 × 1200 pixels at 2× scale, and ask the client which post shape he uses. This is a specification gap: the size belongs in `INT-export`.
-- **Keep-both naming.** Propose adding ` (2)`, ` (3)`, and so on before the extension, as macOS Finder does.
+- **Image size (`OI-22`).** `INT-export` says "sized for LinkedIn posts" without a size. Built at 1200 pixels wide with the height the chart needs; the client's answer belongs in `INT-export`.
+- **Keep-both naming.** Built as proposed: ` (2)`, ` (3)`, and so on before the extension, as macOS Finder does. A file is named by its chart's title.
+- **Not enough space (4a).** The folder check writes and removes a small file, so a disk with no space left is refused before anything is written; a disk that fills part way through fails that chart (5a). The space each image needs is not checked in advance, since it is not known until the image is drawn.
 - **Art units per chart.** One Technology Center has dozens of art units, and the whole office has 524; a chart of all of them is unreadable. This design takes the Technology Center as a parameter. Whether the client wants a "top N" chart instead is a client question, and N would be a threshold the team must not invent.
 - **Examiner-level metrics** are not designed (`OI-9`).
 - **What the sample shows (2026-10-18 file, 8,667 office actions, checked by hand during the build).** Candidates for the client under `OI-1`; only the two two-way metrics above are built.
