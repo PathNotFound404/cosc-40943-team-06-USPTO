@@ -1,11 +1,17 @@
 # Builds the macOS app (KD-packaging-pyinstaller, architecture section 7, step 2).
 # A version tag on main (v1.0.0) publishes the DMG as a GitHub Release. Running the
-# workflow by hand builds the DMG and keeps it as a workflow artifact, for testing.
+# workflow by hand, or a pull request that changes the packaging, builds the DMG and keeps
+# it as a workflow artifact, for testing.
 name: Release
 
 on:
   push:
     tags: ["v*.*.*"]
+  pull_request:
+    paths:
+      - packaging/**
+      - requirements*.txt
+      - .github/workflows/release.yml
   workflow_dispatch:
 
 permissions:

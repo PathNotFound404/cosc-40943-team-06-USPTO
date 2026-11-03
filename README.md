@@ -130,7 +130,7 @@ CI builds the app; you don't need to build it yourself to release (architecture 
 
 - **Every pull request** runs `ruff` and `pytest` on macOS and Windows (`.github/workflows/ci.yml`).
 - **A release** is a version tag on `main` that matches `__version__` in `src/patent_intelligence/__init__.py`, for example `v1.0.0`. The tag runs `.github/workflows/release.yml` on an Apple silicon runner. It builds the app, starts it once as a smoke test, wraps it in a DMG, and publishes a GitHub Release with the notes in `docs/release-notes/<version>.md`. Write that file and bump `__version__` in the pull request before tagging.
-- **A test build without a release:** in GitHub, go to Actions → Release → Run workflow, then download the DMG from the run's artifacts.
+- **A test build without a release:** any pull request that changes `packaging/`, a requirements file, or the release workflow builds the DMG. You can also go to Actions → Release → Run workflow on `main`. Download the DMG from the run's artifacts.
 
 To build on your own Apple silicon Mac:
 
