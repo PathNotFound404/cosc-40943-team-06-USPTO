@@ -50,6 +50,8 @@ Chooser = Callable[[QWidget, tuple[Metric, ...], list[str]], list[Choice] | None
 CleaningOffer = Callable[[QWidget, str], bool]
 # Shows the records behind a bar or segment: chart, category, series (6a, verification.md).
 DrillDown = Callable[[Chart, str | None, str | None], None]
+# Shows the records behind a whole chart (UC-FEAT-verify-source step 1, verification.md).
+ViewSource = Callable[[Chart], None]
 
 
 class MetricChooser(QDialog):
@@ -262,19 +264,29 @@ class WeekChooser(QDialog):
 
 class ChartPage(QWidget):
     """One chart's tab. A chart that takes a Technology Center has a drop-down to change it
-    on the tab (6b)."""
+    on the tab (6b). With `on_view_source`, a button shows the chart's source records
+    (UC-FEAT-verify-source step 1)."""
 
     def __init__(
         self,
         chart: Chart,
         technology_centers: list[str],
         on_technology_center: Callable[[ChartPage, str], None],
+        on_view_source: Callable[[ChartPage], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         layout = QVBoxLayout(self)
+        self.view_source: QPushButton | None = None
+        if on_view_source is not None:
+            self.view_source = QPushButton("View source records")
+            self.view_source.clicked.connect(lambda: on_view_source(self))
+            row = QHBoxLayout()
+            row.addWidget(self.view_source)
+            row.addStretch(1)
+            layout.addLayout(row)
         self.technology_center: QComboBox | None = None
         if TECHNOLOGY_CENTER in chart.result.metric.parameters:
             self.technology_center = QComboBox()
@@ -310,9 +322,11 @@ class ChartsView(QWidget):
         offer_cleaning: CleaningOffer = _ask_to_clean,
         drill_down: DrillDown | None = None,
         choose_weeks: WeeksChooser = WeekChooser.choose,
+        view_source: ViewSource | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self._view_source = view_source
         self._runner = runner
         self._database = database
         self._choose = choose
@@ -402,6 +416,11 @@ class ChartsView(QWidget):
         if self._drill_down is not None:
             self._drill_down(chart, bar.category, bar.series)
 
+    def view_chart_source(self, page: ChartPage) -> None:
+        """UC-FEAT-verify-source step 1: hand the tab's chart, as counted now, to Provenance."""
+        if self._view_source is not None:
+            self._view_source(self.charts[self.tabs.indexOf(page)])
+
     def page(self, index: int) -> ChartPage:
         return self.tabs.widget(index)
 
@@ -412,7 +431,8 @@ class ChartsView(QWidget):
         """Show `chart` on its own tab. A chart of the same metric replaces the one already
         shown, so the session holds the newest of each; the Technology Center is changed on
         the tab rather than opening another."""
-        page = ChartPage(chart, technology_centers, self._change_technology_center)
+        on_view_source = self.view_chart_source if self._view_source is not None else None
+        page = ChartPage(chart, technology_centers, self._change_technology_center, on_view_source)
         self._set_chart(page, chart)
         for index, shown in enumerate(self.charts):
             if shown.result.metric.name == chart.result.metric.name:
