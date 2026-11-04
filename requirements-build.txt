@@ -1,0 +1,4 @@
+# Building the macOS app (KD-packaging-pyinstaller). Developers who only run and test the
+# app from source need requirements.txt alone.
+-r requirements.txt
+pyinstaller==6.22.3
