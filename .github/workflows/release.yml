@@ -66,8 +66,9 @@ jobs:
           cache-dependency-path: requirements-build.txt
       - run: pip install -r requirements-build.txt
       - run: pytest
-      - name: Install Inno Setup
-        run: choco install innosetup --version=6.4.0 --no-progress -y
+      # Inno Setup 6 comes with the windows-2025 runner image, as hdiutil comes with macOS.
+      - name: Show the Inno Setup version
+        run: (Get-Item "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe").VersionInfo.ProductVersion
       - run: ./packaging/build_windows.ps1
         shell: pwsh
       - uses: actions/upload-artifact@v5
