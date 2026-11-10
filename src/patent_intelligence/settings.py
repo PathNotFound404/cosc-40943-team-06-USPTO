@@ -1,6 +1,7 @@
 """Application settings. Only the data folder differs between environments (architecture 8.2.6)."""
 
 import os
+import sys
 from pathlib import Path
 
 APP_NAME = "USPTO Patent Intelligence"
@@ -14,4 +15,6 @@ def data_folder() -> Path:
     override = os.environ.get(DATA_FOLDER_VARIABLE)
     if override:
         return Path(override)
+    if sys.platform == "win32":
+        return Path(os.environ["LOCALAPPDATA"]) / APP_NAME
     return Path.home() / "Library" / "Application Support" / APP_NAME
