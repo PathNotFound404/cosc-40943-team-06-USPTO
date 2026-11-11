@@ -1,10 +1,10 @@
 # USPTO Patent Intelligence
 
-A macOS desktop application that turns the USPTO's weekly office action bulk file into charts about USPTO examination activity. Import a Weekly Release, create visualizations, open the source records behind any figure, and export labeled images ready to post.
+A desktop application for macOS and Windows that turns the USPTO's weekly office action bulk file into charts about USPTO examination activity. Import a Weekly Release, create visualizations, open the source records behind any figure, and export labeled images ready to post.
 
 Everything runs on your own computer. The application makes no network connections and uses no cloud or AI service, so it works with Wi-Fi turned off.
 
-**Current release:** 1.0.0, for Macs with Apple silicon (M1 or later) running macOS 15 Sequoia or later.
+**Current release:** 1.1.0, for Macs with Apple silicon (M1 or later) running macOS 15 Sequoia or later, and for 64-bit Windows 10 or 11.
 
 ## What it does
 
@@ -37,6 +37,12 @@ You don't need Python or the Terminal to use the app.
 2. Open the `.dmg` and drag **USPTO Patent Intelligence** onto **Applications**.
 3. **First launch only:** the app isn't registered with Apple, so macOS blocks it the first time. Open it once, click **Done**, then go to **System Settings → Privacy & Security**, scroll to **Security**, and click **Open Anyway**. After that it opens normally.
 
+## Install the app (Windows)
+
+1. Download `USPTO-Patent-Intelligence-<version>-x64-setup.exe` from the [latest release](https://github.com/PathNotFound404/cosc-40943-team-06-USPTO/releases/latest).
+2. Run it. The installer isn't signed, so SmartScreen may say **"Windows protected your PC"**: click **More info → Run anyway**.
+3. Follow the installer. It installs for your account only (no administrator password) and adds a Start menu shortcut and an uninstaller.
+
 The [user guide](docs/user-guide.md) covers installation step by step, plus updating, backing up, and removing the app.
 
 ### Using the app
@@ -50,7 +56,7 @@ The window has four tabs:
 
 ### Where your data is kept
 
-All imported data lives in `~/Library/Application Support/USPTO Patent Intelligence`, not inside the app, so replacing the app with a new release keeps your data. The folder holds the database (`patent-intelligence.duckdb`) and a log file (`logs/patent-intelligence.log`), which records counts and outcomes only, never office action text or examiner numbers. To back up, quit the app and copy the folder.
+All imported data lives in `~/Library/Application Support/USPTO Patent Intelligence` (macOS) or `%LOCALAPPDATA%\USPTO Patent Intelligence` (Windows), not inside the app, so replacing the app with a new release keeps your data. The folder holds the database (`patent-intelligence.duckdb`) and a log file (`logs/patent-intelligence.log`), which records counts and outcomes only, never office action text or examiner numbers. To back up, quit the app and copy the folder.
 
 ---
 
@@ -62,7 +68,7 @@ All imported data lives in `~/Library/Application Support/USPTO Patent Intellige
 - **Git.**
 - **A weekly office action file** to import (one JSON record per line, from the USPTO Open Data Portal). The team's sample, `bdr_oa_bulkdata_weekly_2026-10-18.json`, isn't in the repository; ask the team for a copy and put it in an `example data/` folder at the repository root, which is git-ignored. Never commit it.
 
-The code runs on both macOS and Windows; only the packaged app is macOS-only.
+The code runs on both macOS and Windows.
 
 ### Set up (once)
 
@@ -135,8 +141,8 @@ Tests use small fixture files in `tests/fixtures/`, never the full sample file. 
 CI builds the app; you don't need to build it yourself to release (architecture section 7, `KD-packaging-pyinstaller`).
 
 - **Every pull request** runs `ruff` and `pytest` on macOS and Windows ([ci.yml](.github/workflows/ci.yml)).
-- **Pull requests that change packaging** (`packaging/`, a requirements file, or the release workflow) also build the DMG. Download it from the run's artifacts. You can also run Actions → Release → Run workflow on `main`.
-- **A release** is a version tag on `main`, such as `v1.0.0`, that matches `__version__` in `src/patent_intelligence/__init__.py`. The tag runs [release.yml](.github/workflows/release.yml) on an Apple silicon runner, which builds the app, starts it once as a smoke test, wraps it in a DMG, and publishes a GitHub Release using `docs/release-notes/<version>.md`. Bump `__version__` and add the release notes in a pull request before tagging.
+- **Pull requests that change packaging** (`packaging/`, a requirements file, `settings.py`, or the release workflow) also build the DMG and the Windows installer. Download them from the run's artifacts. You can also run Actions → Release → Run workflow on `main`.
+- **A release** is a version tag on `main`, such as `v1.0.0`, that matches `__version__` in `src/patent_intelligence/__init__.py`. The tag runs [release.yml](.github/workflows/release.yml) on an Apple silicon runner and a Windows runner. Each builds the app and starts it once as a smoke test; the Mac build is wrapped in a DMG and the Windows build in an Inno Setup installer, and both are published as one GitHub Release using `docs/release-notes/<version>.md`. Bump `__version__` and add the release notes in a pull request before tagging.
 
 To build locally on an Apple silicon Mac:
 
@@ -145,10 +151,14 @@ pip install -r requirements-build.txt
 sh packaging/build_macos.sh             # → dist/USPTO-Patent-Intelligence-<version>-arm64.dmg
 ```
 
-On Windows, `pyinstaller --noconfirm packaging/patent-intelligence.spec` builds a plain folder app (no `.app` or DMG), which is useful for checking that the bundle starts:
-`python packaging/smoke_test.py "dist/USPTO Patent Intelligence/USPTO Patent Intelligence.exe"`.
+To build locally on 64-bit Windows, install [Inno Setup 6](https://jrsoftware.org/isinfo.php) first, then:
 
-The app is ad-hoc signed but not notarized (`OI-12`, `RISK-unsigned-app`), which is why macOS asks for confirmation on first launch.
+```powershell
+pip install -r requirements-build.txt
+.\packaging\build_windows.ps1           # → dist\USPTO-Patent-Intelligence-<version>-x64-setup.exe
+```
+
+The Mac app is ad-hoc signed but not notarized, and the Windows installer is unsigned (`OI-12`, `RISK-unsigned-app`). That is why macOS and Windows ask for confirmation the first time.
 
 ---
 
@@ -159,7 +169,7 @@ The app is ad-hoc signed but not notarized (`OI-12`, `RISK-unsigned-app`), which
 | Application code, one package per component | `src/patent_intelligence/` (`ingestion`, `cleaning`, `storage`, `analytics`, `charts`, `provenance`, `jobs`, `ui`) |
 | Database schema (applied on start-up) | `src/patent_intelligence/storage/migrations/` |
 | Tests and fixtures | `tests/` |
-| Packaging (PyInstaller spec, build script, smoke test) | `packaging/` |
+| Packaging (PyInstaller spec, macOS and Windows build scripts, Inno Setup script, smoke test) | `packaging/` |
 | CI and release workflows | `.github/workflows/` |
 | Release notes | `docs/release-notes/` |
 
@@ -186,6 +196,7 @@ One use case becomes one issue, one branch, one pull request, and one set of tes
 ## Troubleshooting
 
 - **macOS says the app "cannot be verified" or "Not Opened":** this is expected on first launch. Use **Open Anyway** in System Settings → Privacy & Security (see [Install the app](#install-the-app-macos)).
+- **Windows says "Windows protected your PC" when running the installer:** expected, because the installer is unsigned. Click **More info → Run anyway**.
 - **"running scripts is disabled on this system" (Windows):** run the `Set-ExecutionPolicy -Scope Process ...` line before activating. It applies only to the current terminal.
 - **`ModuleNotFoundError: No module named 'patent_intelligence'`:** `PYTHONPATH` isn't set in this terminal.
 - **`ModuleNotFoundError: No module named 'duckdb'` (or `PySide6`):** the virtual environment isn't active, or `pip install -r requirements.txt` hasn't been run.

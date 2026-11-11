@@ -119,7 +119,7 @@ _Examples:_
 - _`OE-server-platform`: The system shall run on a server running the current corporate-approved version of Linux._
 - _`OE-access-paths`: The system shall permit access from the corporate intranet, from a VPN connection, and from Android and iOS phones and tablets._
 
-- OE-desktop-os: The application shall run on macOS on Apple silicon. Minimum macOS version: 15 Sequoia (`OI-17`, resolved 2026-11-03). Windows is out of scope for release 1.0 (vision and scope 4.3), but only cross-platform libraries are used so it remains possible later (architecture `TD-macos-only`).
+- OE-desktop-os: The application shall run on macOS on Apple silicon. Minimum macOS version: 15 Sequoia (`OI-17`, resolved 2026-11-03). From release 1.1 it shall also run on 64-bit Windows 10 or 11 (vision and scope 4.3, team decision 2026-11-10). Windows 10 is the oldest version that Python 3.14 and Qt 6 support.
 - OE-minimum-hardware: The application shall run on a computer with at least 16 GB of RAM and 50 GB of free storage. A GPU is optional (TBD, `OI-17`).
 - OE-hardware-adaptive: When it starts, the application shall detect the available CPU, RAM, and storage, and adjust its processing to match. Adjusting the AI model choice is deferred with the AI features (architecture `KD-no-ai-in-mvp`).
 - OE-offline-operation: Once data is loaded, the application shall do all processing, analysis, and AI work without an internet connection.

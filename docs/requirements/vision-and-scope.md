@@ -437,6 +437,8 @@ _[Of the features above, which ones ship in the release you actually deliver in 
 
 **In scope for the MVP:** `FEAT-Intake-Data`, `FEAT-Generate-Visualization`, `FEAT-Verify-Source`
 
+**Platforms:** macOS on Apple silicon. From release 1.1, a Windows (64-bit) installer is built as well (team decision, 2026-11-10). The client uses one MacBook and does not need Windows now, but said he would be open to it eventually; the build costs nothing to run because all the libraries are cross-platform (architecture `KD-packaging-pyinstaller`).
+
 **Stretch, only if the MVP features are complete:** `FEAT-Query-AI` (the client wants AI analysis, but only if it never makes claims the data cannot support; a model that runs well on his hardware is not yet proven, `RI-Local-AI-Too-Slow`)
 
 **Explicitly out of scope:**
@@ -445,7 +447,6 @@ _[Of the features above, which ones ship in the release you actually deliver in 
 - `FEAT-Detect-Anomalies` (there is no labeled data to prove an "unusual" flag is right, so it risks publishing claims the data cannot support)
 - `FEAT-Historical-Overview` (the client called monthly and yearly overviews "nice but not necessary at this moment")
 - `FEAT-International-Data` (the client plans to look at European and Chinese data in spring 2027)
-- Windows support (the client uses one MacBook and does not need Windows now)
 - Posting directly to LinkedIn or Instagram (by design; Malachi copies exports himself)
 
 _Ask your client the question directly: "If we can deliver only one of these in December, which one is it?" The answer is worth more than the rest of the meeting. A client who cannot choose has not thought about it yet, which is itself something you need to know now rather than in November._

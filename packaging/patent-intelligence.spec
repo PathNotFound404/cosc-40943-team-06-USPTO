@@ -1,8 +1,9 @@
-# PyInstaller spec for the macOS app (KD-packaging-pyinstaller, architecture section 7).
-# Build with packaging/build_macos.sh, not by calling PyInstaller directly.
+# PyInstaller spec for the macOS and Windows apps (KD-packaging-pyinstaller, architecture
+# section 7). Build with packaging/build_macos.sh or packaging/build_windows.ps1, not by
+# calling PyInstaller directly.
 #
-# On Windows this spec builds a plain folder app with no BUNDLE step, so a developer
-# without a Mac can still check that the bundle starts and finds its migrations.
+# On Windows this spec builds a plain x64 folder app with no BUNDLE step, which
+# packaging/windows-installer.iss then wraps in an installer.
 
 import re
 import sys
